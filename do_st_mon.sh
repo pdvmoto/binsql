@@ -7,10 +7,7 @@ sqlplus -s /nolog <<EOF
 
 set feedb off
 
-connect superuser/nWXPAH0weHNwWDg7wZiPMtWU6PjLrm@pbtemp
-
-rem conn superuser/nWXPAH0weHNwWDg7wZiPMtWU6PjLrm@naomi
-rem @cvscott
+@cvscott
 
 @do_st_mon
 
