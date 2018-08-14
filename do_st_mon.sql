@@ -9,7 +9,7 @@ merge into bt_mon_stats u
   o.statistic#
 , o.new_val     new_old_val
 , s.value       new_val
-, ( s.value - o.old_val )  diff
+-- , ( s.value - o.old_val )  diff -- unreliable
 from bt_mon_stats o
    , v$sysstat s
 where o.statistic# = s.statistic#
@@ -18,8 +18,10 @@ where o.statistic# = s.statistic#
 when matched then
   update set u.old_val = n.new_old_val
            , u.new_val = n.new_val
-           , u.diff = n.diff
-           , u.per_sec = n.diff / ( (sysdate - u.dt_recorded) * 24 * 3600) 
+           --, u.diff = n.diff        -- better (new_val - new_old_val)
+           , u.diff    = (n.new_val - n.new_old_val)
+           , u.per_sec = (n.new_val - n.new_old_val) 
+                          / ( (sysdate - u.dt_recorded) * 24 * 3600) 
            , u.dt_recorded = sysdate
 ;
 
@@ -35,15 +37,16 @@ column prot_mode   format A8
 column prot_level  format a8  wrap
 column hostname    format a20
 column started     format a21
+column datetime    format a21
 
 column name             format A23 trunc
 column datetime         format A20
-column diff             format 999,999,999.00
+column diff             format 999,999,999
+column cdiff            format 999,999,999
+column old_val          format 999,999,999
+column new_val          format 999,999,999
 column per_sec          format 999,999.00
 column secs             format 9,999.9
-
-rem watch program will do the sleeping.
-rem host sleep 5
 
 clear screen 
 
@@ -53,9 +56,9 @@ set feedb off
 
 select i.instance_name              as instance
 , i.host_name                       as hostname
--- , to_char ( i.startup_time, 'YYYY-MON-DD HH24:MI:SS' ) as started
--- , i.status
 , count (*)                         as sessions
+, to_char ( sysdate, 'YYYY-MON-DD HH24:MI:SS' ) as datetime
+-- , i.status
 from gv$instance i
    , gv$session s
 where i.inst_id = s.inst_id
@@ -64,8 +67,11 @@ order by 1, 2, 3 ;
 
 -- differences timings
 select name
+--      , old_val
+--      , new_val
      , diff
      , per_sec
+--     , (new_val - old_val) as cdiff
 --     , to_char (dt_recorded, 'HH24:MI:SS') 
 from bt_mon_stats
 where name like '%tim%'
@@ -74,8 +80,11 @@ order by name ;
 
 -- differences, others
 select name
+--      , old_val
+--      , new_val
      , diff
      , per_sec
+--     , (new_val - old_val) as cdiff
 --     , to_char (dt_recorded, 'HH24:MI:SS') 
 from bt_mon_stats
 where name not like '%tim%'

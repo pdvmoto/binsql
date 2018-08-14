@@ -10,8 +10,8 @@ using (
 select e.event_id as event_id
      , e.time_waited_micro                      as tim
      , e.time_waited_micro_fg                   as tim_fg
-     , e.time_waited_micro      - o.old_tim     as diff
-     , e.time_waited_micro_fg   - o.old_tim_fg  as diff_fg
+     , e.time_waited_micro      - o.new_tim     as diff
+     , e.time_waited_micro_fg   - o.new_tim_fg  as diff_fg
  from v$system_event e
     , bt_mon_ev      o
 where e.event_id = o.event_id
@@ -33,8 +33,8 @@ using (
 select s.statistic#                 as event_id
      , s.value                      as tim
      , s.value                      as tim_fg
-     , s.value      - o.old_tim     as diff
-     , s.value      - o.old_tim_fg  as diff_fg
+     , s.value      - o.new_tim     as diff
+     , s.value      - o.new_tim_fg  as diff_fg
  from v$sysstat   s
     , bt_mon_ev   o
 where s.statistic# = o.event_id
@@ -75,10 +75,11 @@ clear screen
 set feedb off
 set head on
 
--- now display
+-- now display, first the time + instance + sessioncount
 select i.instance_name              as instance
 , i.host_name                       as hostname
 -- , to_char ( i.startup_time, 'YYYY-MON-DD HH24:MI:SS' ) as started
+, to_char ( sysdate, 'YYYY-MON-DD HH24:MI:SS' ) as time
 -- , i.status
 , count (*)                         as sessions
 from gv$instance i
@@ -100,5 +101,10 @@ where wait_class <> 'Idle'
   and (diff + diff_fg ) > 0 
 order by e.diff_fg desc;
 
--- no explicit Exit.
+-- make sure next session can run
+set feedb off
+commit;
+set feedb on
+
+-- no explicit Exit, script can be called from elsewhere.
 
