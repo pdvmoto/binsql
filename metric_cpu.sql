@@ -2,16 +2,16 @@ column instance_number format 9999 head inst
 column date_time format A15
 column cpu_interval format 999999
 
-column dend_snap  format A32
+column dend_snap  format A25
 
 column db_cpu_sec format 999999
 column db_non_cpu format 999999
 column db_tottime format 999999 
-column db_min     format 999.99 
-column aas        format  99.99
+column db_min     format 9999.99 
+column aas        format  999.99
 column date_time  format A15
 
-/* ***/
+/* ** * /
  select  stm2.snap_id, stm2.dbid, stm2.instance_number 
  , round ( ( stm2.value - stm1.value ) / ( 1000 * 1000) )  cpu_sec 
  from 
@@ -50,10 +50,10 @@ column date_time  format A15
  order by snap_id , dbid, instance_number ;
 /*** */
 
-/* *** old version,  **/
+/* *** old version,  ** /
  
 With snaps as 
-( select /*+ materialize * / s2.end_interval_time, s1.snap_id s1, s2.snap_id s2, s1.dbid, s1.instance_number
+( select /* + materialize * / s2.end_interval_time, s1.snap_id s1, s2.snap_id s2, s1.dbid, s1.instance_number
 , round ( ( cast ( s2.end_interval_time as date) - cast (s1.end_interval_time as date) ) * 3600 * 24 ) as delta_time
 --, s1.*, s2.*
 from dba_hist_snapshot s1
@@ -66,7 +66,7 @@ and s1.instance_number = s2.instance_number
 and s1.startup_time = s2.startup_time
 and s1.end_interval_time = s2.begin_interval_time
 and s1.dbid = db.dbid
-and s2.begin_interval_time > trunc ( sysdate - 30 )  -- only recent
+and s2.begin_interval_time > trunc ( sysdate - 10 )  -- only recent
 --order by s1.snap_id desc 
 )
 select /*+ rule * /
@@ -105,7 +105,7 @@ order by s.s1
 ; 
 /** old version **/
 
-/***/
+/** * /
 With snaps as 
 ( select /*+ materialize * / 
   s2.end_interval_time
@@ -166,6 +166,8 @@ order by s.s1
 
 column nr_conn format 999.99 heading nr_conn
 
+linesize 100
+
 With snaps as
 ( select /*+ materialize */
   s2.end_interval_time
@@ -184,13 +186,13 @@ and s1.instance_number = s2.instance_number
 and s1.startup_time = s2.startup_time
 and s1.end_interval_time = s2.begin_interval_time
 and s1.dbid = db.dbid
-and s2.begin_interval_time > trunc ( sysdate - 30 )  -- only recent
+and s2.begin_interval_time > trunc ( sysdate - 17 )  -- only recent
 --order by s1.snap_id desc
 )
 select /*+ rule */
-  '@awr12 ' || s.s1 || ' ' || s.s2  AS dend_snap
+  '@awr12 ' || s.s1 || ' ' || s.s2                          AS dend_snap
 , to_char ( s.end_interval_time, 'DY DD HH24:MI' ) 			as date_time
-, round ( ss.average, 2 )                                               as nr_conn
+, round ( ss.average, 2 )                                   as nr_conn
 , round ( (cpu2.value - cpu1.value)/(1000*1000))      			as DB_CPU_SEC
 , round ( (dbt2.value - dbt1.value)/(1000*1000*60), 2) 			as db_min
 , ROUND ( ((DBT2.VALUE - DBT1.VALUE)/(1000*1000))  / S.DELTA_TIME, 2 ) as aas

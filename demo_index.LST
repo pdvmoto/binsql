@@ -1,0 +1,1213 @@
+SQL > 
+SQL > clear screen
+SQL > 
+SQL > -- drop and recreate the table with a 2-field PK, typical parent-child.
+SQL > 
+SQL > drop   table OVL;
+
+Table dropped.
+
+SQL > create table OVL as
+  2  select OWNER, TABLE_NAME, TABLESPACE_NAME
+  3  	  , IOT_TYPE, IOT_NAME, NUM_ROWS, AVG_ROW_LEN
+  4  	  , LAST_ANALYZED, STATUS
+  5  from all_tables order by dbms_random.value ;
+
+Table created.
+
+SQL > 
+SQL > 
+SQL > --
+SQL > -- table with some fields..
+SQL > -- now some SQL on that table to demonstrate how to explain and trace...
+SQL > --
+SQL > 
+SQL > accept press_enter prompt "press enter to continue..."
+press enter to continue...
+SQL > 
+SQL > select
+  2  	     owner, table_name, num_rows
+  3  from    ovl
+  4  where   owner = 'DBSNMP'
+  5  /
+
+OWNER                TABLE_NAME                       NUM_ROWS                                      
+-------------------- ------------------------------ ----------                                      
+DBSNMP               MGMT_LATEST_SQL                         0                                      
+DBSNMP               MGMT_BASELINE_SQL                       0                                      
+DBSNMP               MGMT_DB_FILE_GTT                                                               
+DBSNMP               BSLN_METRIC_DEFAULTS                   49                                      
+DBSNMP               MGMT_HISTORY_SQL                        0                                      
+DBSNMP               MGMT_SNAPSHOT_SQL                       0                                      
+DBSNMP               MGMT_HISTORY                            0                                      
+DBSNMP               MGMT_RESPONSE_CONFIG                    0                                      
+DBSNMP               MGMT_LATEST                             0                                      
+DBSNMP               BSLN_THRESHOLD_PARAMS                   0                                      
+DBSNMP               BSLN_BASELINES                          1                                      
+DBSNMP               MGMT_SNAPSHOT                           0                                      
+DBSNMP               MGMT_CAPTURE                            0                                      
+DBSNMP               BSLN_TIMEGROUPS                       168                                      
+DBSNMP               MGMT_TEMPT_SQL                                                                 
+DBSNMP               MGMT_CAPTURE_SQL                        0                                      
+DBSNMP               MGMT_DB_FEATURE_LOG                     0                                      
+DBSNMP               MGMT_DB_SIZE_GTT                                                               
+DBSNMP               BSLN_STATISTICS                       985                                      
+DBSNMP               MGMT_BASELINE                           0                                      
+
+20 rows selected.
+
+SQL > select * from table(dbms_xplan.display_cursor('',null,'BASIC'));
+
+PLAN_TABLE_OUTPUT                                                                                   
+----------------------------------------------------------------------------------------------------
+EXPLAINED SQL STATEMENT:                                                                            
+------------------------                                                                            
+select  owner, table_name, num_rows from  ovl where   owner = :"SYS_B_0"                            
+                                                                                                    
+Plan hash value: 3331701122                                                                         
+                                                                                                    
+----------------------------------                                                                  
+| Id  | Operation         | Name |                                                                  
+----------------------------------                                                                  
+|   0 | SELECT STATEMENT  |      |                                                                  
+|   1 |  TABLE ACCESS FULL| OVL  |                                                                  
+----------------------------------                                                                  
+                                                                                                    
+
+13 rows selected.
+
+SQL > 
+SQL > --
+SQL > -- notice the full table access, why no indexes ?
+SQL > --
+SQL > accept press_enter prompt "press enter to continue..."
+press enter to continue...
+SQL > 
+SQL > 
+SQL > set autotrace on stat
+SQL > select
+  2  	     owner, table_name, num_rows
+  3  from    ovl
+  4  where   owner = 'DBSNMP'
+  5  /
+
+OWNER                TABLE_NAME                       NUM_ROWS                                      
+-------------------- ------------------------------ ----------                                      
+DBSNMP               MGMT_LATEST_SQL                         0                                      
+DBSNMP               MGMT_BASELINE_SQL                       0                                      
+DBSNMP               MGMT_DB_FILE_GTT                                                               
+DBSNMP               BSLN_METRIC_DEFAULTS                   49                                      
+DBSNMP               MGMT_HISTORY_SQL                        0                                      
+DBSNMP               MGMT_SNAPSHOT_SQL                       0                                      
+DBSNMP               MGMT_HISTORY                            0                                      
+DBSNMP               MGMT_RESPONSE_CONFIG                    0                                      
+DBSNMP               MGMT_LATEST                             0                                      
+DBSNMP               BSLN_THRESHOLD_PARAMS                   0                                      
+DBSNMP               BSLN_BASELINES                          1                                      
+DBSNMP               MGMT_SNAPSHOT                           0                                      
+DBSNMP               MGMT_CAPTURE                            0                                      
+DBSNMP               BSLN_TIMEGROUPS                       168                                      
+DBSNMP               MGMT_TEMPT_SQL                                                                 
+DBSNMP               MGMT_CAPTURE_SQL                        0                                      
+DBSNMP               MGMT_DB_FEATURE_LOG                     0                                      
+DBSNMP               MGMT_DB_SIZE_GTT                                                               
+DBSNMP               BSLN_STATISTICS                       985                                      
+DBSNMP               MGMT_BASELINE                           0                                      
+
+20 rows selected.
+
+
+Statistics
+----------------------------------------------------------                                          
+          0  recursive calls                                                                        
+          0  db block gets                                                                          
+         25  consistent gets                                                                        
+          0  physical reads                                                                         
+          0  redo size                                                                              
+       1050  bytes sent via SQL*Net to client                                                       
+        511  bytes received via SQL*Net from client                                                 
+          3  SQL*Net roundtrips to/from client                                                      
+          0  sorts (memory)                                                                         
+          0  sorts (disk)                                                                           
+         20  rows processed                                                                         
+
+SQL > set autotrace off
+SQL > 
+SQL > --
+SQL > -- Notice the autotrace information: consistent-gets.
+SQL > --
+SQL > 
+SQL > accept press_enter prompt "Add index and constraint. enter to continue..."
+Add index and constraint. enter to continue...
+SQL > 
+SQL > 
+SQL > create unique index OVL_PK_IND on OVL ( OWNER, TABLE_NAME );
+
+Index created.
+
+SQL > alter table OVL add constraint OVL_PK primary key ( OWNER, TABLE_NAME ) using index ovl_pk_ind ;
+
+Table altered.
+
+SQL > 
+SQL > -- Index and constraint added.
+SQL > -- first pass of the qry is a good moment to use display_cursor.
+SQL > -- second pass of the qry we will use autotrace-stats to see IO.
+SQL > accept press_enter prompt "press enter to continue..."
+press enter to continue...
+SQL > 
+SQL > select
+  2  	     owner, table_name, num_rows
+  3  from    ovl
+  4  where   owner = 'DBSNMP'
+  5  /
+
+OWNER                TABLE_NAME                       NUM_ROWS                                      
+-------------------- ------------------------------ ----------                                      
+DBSNMP               BSLN_BASELINES                          1                                      
+DBSNMP               BSLN_METRIC_DEFAULTS                   49                                      
+DBSNMP               BSLN_STATISTICS                       985                                      
+DBSNMP               BSLN_THRESHOLD_PARAMS                   0                                      
+DBSNMP               BSLN_TIMEGROUPS                       168                                      
+DBSNMP               MGMT_BASELINE                           0                                      
+DBSNMP               MGMT_BASELINE_SQL                       0                                      
+DBSNMP               MGMT_CAPTURE                            0                                      
+DBSNMP               MGMT_CAPTURE_SQL                        0                                      
+DBSNMP               MGMT_DB_FEATURE_LOG                     0                                      
+DBSNMP               MGMT_DB_FILE_GTT                                                               
+DBSNMP               MGMT_DB_SIZE_GTT                                                               
+DBSNMP               MGMT_HISTORY                            0                                      
+DBSNMP               MGMT_HISTORY_SQL                        0                                      
+DBSNMP               MGMT_LATEST                             0                                      
+DBSNMP               MGMT_LATEST_SQL                         0                                      
+DBSNMP               MGMT_RESPONSE_CONFIG                    0                                      
+DBSNMP               MGMT_SNAPSHOT                           0                                      
+DBSNMP               MGMT_SNAPSHOT_SQL                       0                                      
+DBSNMP               MGMT_TEMPT_SQL                                                                 
+
+20 rows selected.
+
+SQL > select * from table(dbms_xplan.display_cursor('',null,'BASIC'));
+
+PLAN_TABLE_OUTPUT                                                                                   
+----------------------------------------------------------------------------------------------------
+EXPLAINED SQL STATEMENT:                                                                            
+------------------------                                                                            
+select  owner, table_name, num_rows from  ovl where   owner = :"SYS_B_0"                            
+                                                                                                    
+Plan hash value: 641757963                                                                          
+                                                                                                    
+----------------------------------------------------------                                          
+| Id  | Operation                           | Name       |                                          
+----------------------------------------------------------                                          
+|   0 | SELECT STATEMENT                    |            |                                          
+|   1 |  TABLE ACCESS BY INDEX ROWID BATCHED| OVL        |                                          
+|   2 |   INDEX RANGE SCAN                  | OVL_PK_IND |                                          
+----------------------------------------------------------                                          
+                                                                                                    
+
+14 rows selected.
+
+SQL > 
+SQL > --
+SQL > -- notice the access via PK-range, followed by access-by-idx-rowid
+SQL > --
+SQL > accept press_enter prompt "press enter to continue..."
+press enter to continue...
+SQL > 
+SQL > set autotrace on stat
+SQL > select
+  2  	     owner, table_name, num_rows
+  3  from    ovl
+  4  where   owner = 'DBSNMP'
+  5  /
+
+OWNER                TABLE_NAME                       NUM_ROWS                                      
+-------------------- ------------------------------ ----------                                      
+DBSNMP               BSLN_BASELINES                          1                                      
+DBSNMP               BSLN_METRIC_DEFAULTS                   49                                      
+DBSNMP               BSLN_STATISTICS                       985                                      
+DBSNMP               BSLN_THRESHOLD_PARAMS                   0                                      
+DBSNMP               BSLN_TIMEGROUPS                       168                                      
+DBSNMP               MGMT_BASELINE                           0                                      
+DBSNMP               MGMT_BASELINE_SQL                       0                                      
+DBSNMP               MGMT_CAPTURE                            0                                      
+DBSNMP               MGMT_CAPTURE_SQL                        0                                      
+DBSNMP               MGMT_DB_FEATURE_LOG                     0                                      
+DBSNMP               MGMT_DB_FILE_GTT                                                               
+DBSNMP               MGMT_DB_SIZE_GTT                                                               
+DBSNMP               MGMT_HISTORY                            0                                      
+DBSNMP               MGMT_HISTORY_SQL                        0                                      
+DBSNMP               MGMT_LATEST                             0                                      
+DBSNMP               MGMT_LATEST_SQL                         0                                      
+DBSNMP               MGMT_RESPONSE_CONFIG                    0                                      
+DBSNMP               MGMT_SNAPSHOT                           0                                      
+DBSNMP               MGMT_SNAPSHOT_SQL                       0                                      
+DBSNMP               MGMT_TEMPT_SQL                                                                 
+
+20 rows selected.
+
+
+Statistics
+----------------------------------------------------------                                          
+          0  recursive calls                                                                        
+          0  db block gets                                                                          
+         23  consistent gets                                                                        
+          0  physical reads                                                                         
+          0  redo size                                                                              
+       1169  bytes sent via SQL*Net to client                                                       
+        511  bytes received via SQL*Net from client                                                 
+          3  SQL*Net roundtrips to/from client                                                      
+          0  sorts (memory)                                                                         
+          0  sorts (disk)                                                                           
+         20  rows processed                                                                         
+
+SQL > set autotrace off
+SQL > 
+SQL > --
+SQL > -- notice the nr of consistent-gets:
+SQL > -- the query is now able to filter its set based on the index
+SQL > -- but then has to visit the table to pickup the num_rows...
+SQL > --
+SQL > accept press_enter prompt "press enter to continue..."
+press enter to continue...
+SQL > 
+SQL > --
+SQL > -- what if we dont need the field NUM_ROWS ... ??
+SQL > --
+SQL > accept press_enter prompt "press enter to continue..."
+press enter to continue...
+SQL > 
+SQL > 
+SQL > select
+  2  	     owner, table_name
+  3  from    ovl
+  4  where   owner = 'DBSNMP'
+  5  /
+
+OWNER                TABLE_NAME                                                                     
+-------------------- ------------------------------                                                 
+DBSNMP               BSLN_BASELINES                                                                 
+DBSNMP               BSLN_METRIC_DEFAULTS                                                           
+DBSNMP               BSLN_STATISTICS                                                                
+DBSNMP               BSLN_THRESHOLD_PARAMS                                                          
+DBSNMP               BSLN_TIMEGROUPS                                                                
+DBSNMP               MGMT_BASELINE                                                                  
+DBSNMP               MGMT_BASELINE_SQL                                                              
+DBSNMP               MGMT_CAPTURE                                                                   
+DBSNMP               MGMT_CAPTURE_SQL                                                               
+DBSNMP               MGMT_DB_FEATURE_LOG                                                            
+DBSNMP               MGMT_DB_FILE_GTT                                                               
+DBSNMP               MGMT_DB_SIZE_GTT                                                               
+DBSNMP               MGMT_HISTORY                                                                   
+DBSNMP               MGMT_HISTORY_SQL                                                               
+DBSNMP               MGMT_LATEST                                                                    
+DBSNMP               MGMT_LATEST_SQL                                                                
+DBSNMP               MGMT_RESPONSE_CONFIG                                                           
+DBSNMP               MGMT_SNAPSHOT                                                                  
+DBSNMP               MGMT_SNAPSHOT_SQL                                                              
+DBSNMP               MGMT_TEMPT_SQL                                                                 
+
+20 rows selected.
+
+SQL > select * from table(dbms_xplan.display_cursor('',null,'BASIC'));
+
+PLAN_TABLE_OUTPUT                                                                                   
+----------------------------------------------------------------------------------------------------
+EXPLAINED SQL STATEMENT:                                                                            
+------------------------                                                                            
+select  owner, table_name from  ovl where   owner = :"SYS_B_0"                                      
+                                                                                                    
+Plan hash value: 355060794                                                                          
+                                                                                                    
+---------------------------------------                                                             
+| Id  | Operation        | Name       |                                                             
+---------------------------------------                                                             
+|   0 | SELECT STATEMENT |            |                                                             
+|   1 |  INDEX RANGE SCAN| OVL_PK_IND |                                                             
+---------------------------------------                                                             
+                                                                                                    
+
+13 rows selected.
+
+SQL > 
+SQL > --
+SQL > -- notice the access via index range scan on PK,
+SQL > -- but no table-access..
+SQL > --
+SQL > accept press_enter prompt "press enter to continue..."
+press enter to continue...
+SQL > 
+SQL > set autotrace on stat
+SQL > select
+  2  	     owner, table_name
+  3  from    ovl
+  4  where   owner = 'DBSNMP'
+  5  /
+
+OWNER                TABLE_NAME                                                                     
+-------------------- ------------------------------                                                 
+DBSNMP               BSLN_BASELINES                                                                 
+DBSNMP               BSLN_METRIC_DEFAULTS                                                           
+DBSNMP               BSLN_STATISTICS                                                                
+DBSNMP               BSLN_THRESHOLD_PARAMS                                                          
+DBSNMP               BSLN_TIMEGROUPS                                                                
+DBSNMP               MGMT_BASELINE                                                                  
+DBSNMP               MGMT_BASELINE_SQL                                                              
+DBSNMP               MGMT_CAPTURE                                                                   
+DBSNMP               MGMT_CAPTURE_SQL                                                               
+DBSNMP               MGMT_DB_FEATURE_LOG                                                            
+DBSNMP               MGMT_DB_FILE_GTT                                                               
+DBSNMP               MGMT_DB_SIZE_GTT                                                               
+DBSNMP               MGMT_HISTORY                                                                   
+DBSNMP               MGMT_HISTORY_SQL                                                               
+DBSNMP               MGMT_LATEST                                                                    
+DBSNMP               MGMT_LATEST_SQL                                                                
+DBSNMP               MGMT_RESPONSE_CONFIG                                                           
+DBSNMP               MGMT_SNAPSHOT                                                                  
+DBSNMP               MGMT_SNAPSHOT_SQL                                                              
+DBSNMP               MGMT_TEMPT_SQL                                                                 
+
+20 rows selected.
+
+
+Statistics
+----------------------------------------------------------                                          
+          0  recursive calls                                                                        
+          0  db block gets                                                                          
+          4  consistent gets                                                                        
+          0  physical reads                                                                         
+          0  redo size                                                                              
+       1075  bytes sent via SQL*Net to client                                                       
+        511  bytes received via SQL*Net from client                                                 
+          3  SQL*Net roundtrips to/from client                                                      
+          0  sorts (memory)                                                                         
+          0  sorts (disk)                                                                           
+         20  rows processed                                                                         
+
+SQL > set autotrace off
+SQL > 
+SQL > --
+SQL > -- notice the nr of consistent-gets:
+SQL > -- now even lower: we didnt visit the table.
+SQL > --
+SQL > accept press_enter prompt "press enter to continue..."
+press enter to continue...
+SQL > 
+SQL > --
+SQL > -- now for a demo on how index-access can be IN-efficient
+SQL > --
+SQL > --
+SQL > accept press_enter prompt "press enter to continue..."
+press enter to continue...
+SQL > 
+SQL > select
+  2  	     owner, table_name, num_rows
+  3  from    ovl
+  4  where   owner like 'SYS%'
+  5  and     num_rows > 100000
+  6  /
+
+OWNER                TABLE_NAME                       NUM_ROWS                                      
+-------------------- ------------------------------ ----------                                      
+SYS                  COL$                               103887                                      
+SYS                  HISTGRM$                           727948                                      
+SYS                  SOURCE$                            247559                                      
+SYS                  WRH$_ACTIVE_SESSION_HISTORY       2654997                                      
+SYS                  WRH$_BG_EVENT_SUMMARY             1068617                                      
+SYS                  WRH$_DB_CACHE_ADVICE               198322                                      
+SYS                  WRH$_ENQUEUE_STAT                  980356                                      
+SYS                  WRH$_EVENT_HISTOGRAM             11389174                                      
+SYS                  WRH$_FILESTATXS                    237400                                      
+SYS                  WRH$_IOSTAT_DETAIL                 165102                                      
+SYS                  WRH$_IOSTAT_FILETYPE               122473                                      
+SYS                  WRH$_IOSTAT_FUNCTION               141315                                      
+SYS                  WRH$_JAVA_POOL_ADVICE              111869                                      
+SYS                  WRH$_LATCH                        7261870                                      
+SYS                  WRH$_LATCH_MISSES_SUMMARY         2172012                                      
+SYS                  WRH$_LIBRARYCACHE                  275011                                      
+SYS                  WRH$_MEM_DYNAMIC_COMP              169578                                      
+SYS                  WRH$_MUTEX_SLEEP                   447997                                      
+SYS                  WRH$_MVPARAMETER                   716756                                      
+SYS                  WRH$_OSSTAT                        245206                                      
+SYS                  WRH$_PARAMETER                    3734676                                      
+SYS                  WRH$_PERSISTENT_QMN_CACHE          150736                                      
+SYS                  WRH$_PGASTAT                       157105                                      
+SYS                  WRH$_PGA_TARGET_ADVICE             131894                                      
+SYS                  WRH$_RESOURCE_LIMIT                207262                                      
+SYS                  WRH$_ROWCACHE_SUMMARY              556429                                      
+SYS                  WRH$_SEG_STAT                     1081474                                      
+SYS                  WRH$_SERVICE_STAT                  792204                                      
+SYS                  WRH$_SERVICE_WAIT_CLASS            198744                                      
+SYS                  WRH$_SGASTAT                       128388                                      
+SYS                  WRH$_SGA_TARGET_ADVICE             301472                                      
+SYS                  WRH$_SHARED_POOL_ADVICE            297794                                      
+SYS                  WRH$_SQLSTAT                      1808740                                      
+SYS                  WRH$_SQL_PLAN                      430105                                      
+SYS                  WRH$_SQL_WORKAREA_HISTOGRAM        188956                                      
+SYS                  WRH$_STREAMS_POOL_ADVICE           188420                                      
+SYS                  WRH$_SYSMETRIC_HISTORY            3248911                                      
+SYS                  WRH$_SYSMETRIC_SUMMARY            1516137                                      
+SYS                  WRH$_SYSSTAT                     11109718                                      
+SYS                  WRH$_SYSTEM_EVENT                 1520014                                      
+SYS                  WRH$_SYS_TIME_MODEL                273499                                      
+SYS                  WRH$_TABLESPACE_SPACE_USAGE        244946                                      
+SYS                  WRH$_TABLESPACE_STAT               235775                                      
+SYS                  WRH$_WAITSTAT                      169758                                      
+SYS                  WRI$_ADV_MESSAGE_GROUPS            299963                                      
+SYS                  WRI$_ADV_PARAMETERS                197824                                      
+SYS                  WRI$_OPTSTAT_HISTGRM_HISTORY      8579067                                      
+SYS                  WRI$_OPTSTAT_HISTHEAD_HISTORY      407404                                      
+SYS                  WRI$_OPTSTAT_OPR_TASKS             105925                                      
+SYS                  WRI$_OPTSTAT_SYNOPSIS$           30087421                                      
+SYS                  WRI$_RCS_2411_1                    418322                                      
+SYS                  WRM$_SNAPSHOT_DETAILS              847890                                      
+SYS                  WRP$_REPORTS                       135262                                      
+SYS                  WRP$_REPORTS_DETAILS               135262                                      
+SYS                  WRP$_REPORTS_TIME_BANDS            135390                                      
+SYSTEM               LOGMNR_COL$                        407700                                      
+SYSTEM               LOGMNR_OBJ$                        104675                                      
+
+57 rows selected.
+
+SQL > select * from table(dbms_xplan.display_cursor('',null,'BASIC'));
+
+PLAN_TABLE_OUTPUT                                                                                   
+----------------------------------------------------------------------------------------------------
+EXPLAINED SQL STATEMENT:                                                                            
+------------------------                                                                            
+select  owner, table_name, num_rows from  ovl where   owner like                                    
+:"SYS_B_0" and     num_rows > :"SYS_B_1"                                                            
+                                                                                                    
+Plan hash value: 641757963                                                                          
+                                                                                                    
+----------------------------------------------------------                                          
+| Id  | Operation                           | Name       |                                          
+----------------------------------------------------------                                          
+|   0 | SELECT STATEMENT                    |            |                                          
+|   1 |  TABLE ACCESS BY INDEX ROWID BATCHED| OVL        |                                          
+|   2 |   INDEX RANGE SCAN                  | OVL_PK_IND |                                          
+----------------------------------------------------------                                          
+                                                                                                    
+
+15 rows selected.
+
+SQL > 
+SQL > --
+SQL > -- notice: on first sight we have an efficient SQL,
+SQL > -- index range scan and table-by-rowid.
+SQL > -- but how much effort did the qry do?
+SQL > --
+SQL > 
+SQL > accept press_enter prompt "press enter to continue..."
+press enter to continue...
+SQL > 
+SQL > set autotrace on stat
+SQL > select
+  2  	     owner, table_name, num_rows
+  3  from    ovl
+  4  where   owner like 'SYS%'
+  5  and     num_rows > 100000
+  6  /
+
+OWNER                TABLE_NAME                       NUM_ROWS                                      
+-------------------- ------------------------------ ----------                                      
+SYS                  COL$                               103887                                      
+SYS                  HISTGRM$                           727948                                      
+SYS                  SOURCE$                            247559                                      
+SYS                  WRH$_ACTIVE_SESSION_HISTORY       2654997                                      
+SYS                  WRH$_BG_EVENT_SUMMARY             1068617                                      
+SYS                  WRH$_DB_CACHE_ADVICE               198322                                      
+SYS                  WRH$_ENQUEUE_STAT                  980356                                      
+SYS                  WRH$_EVENT_HISTOGRAM             11389174                                      
+SYS                  WRH$_FILESTATXS                    237400                                      
+SYS                  WRH$_IOSTAT_DETAIL                 165102                                      
+SYS                  WRH$_IOSTAT_FILETYPE               122473                                      
+SYS                  WRH$_IOSTAT_FUNCTION               141315                                      
+SYS                  WRH$_JAVA_POOL_ADVICE              111869                                      
+SYS                  WRH$_LATCH                        7261870                                      
+SYS                  WRH$_LATCH_MISSES_SUMMARY         2172012                                      
+SYS                  WRH$_LIBRARYCACHE                  275011                                      
+SYS                  WRH$_MEM_DYNAMIC_COMP              169578                                      
+SYS                  WRH$_MUTEX_SLEEP                   447997                                      
+SYS                  WRH$_MVPARAMETER                   716756                                      
+SYS                  WRH$_OSSTAT                        245206                                      
+SYS                  WRH$_PARAMETER                    3734676                                      
+SYS                  WRH$_PERSISTENT_QMN_CACHE          150736                                      
+SYS                  WRH$_PGASTAT                       157105                                      
+SYS                  WRH$_PGA_TARGET_ADVICE             131894                                      
+SYS                  WRH$_RESOURCE_LIMIT                207262                                      
+SYS                  WRH$_ROWCACHE_SUMMARY              556429                                      
+SYS                  WRH$_SEG_STAT                     1081474                                      
+SYS                  WRH$_SERVICE_STAT                  792204                                      
+SYS                  WRH$_SERVICE_WAIT_CLASS            198744                                      
+SYS                  WRH$_SGASTAT                       128388                                      
+SYS                  WRH$_SGA_TARGET_ADVICE             301472                                      
+SYS                  WRH$_SHARED_POOL_ADVICE            297794                                      
+SYS                  WRH$_SQLSTAT                      1808740                                      
+SYS                  WRH$_SQL_PLAN                      430105                                      
+SYS                  WRH$_SQL_WORKAREA_HISTOGRAM        188956                                      
+SYS                  WRH$_STREAMS_POOL_ADVICE           188420                                      
+SYS                  WRH$_SYSMETRIC_HISTORY            3248911                                      
+SYS                  WRH$_SYSMETRIC_SUMMARY            1516137                                      
+SYS                  WRH$_SYSSTAT                     11109718                                      
+SYS                  WRH$_SYSTEM_EVENT                 1520014                                      
+SYS                  WRH$_SYS_TIME_MODEL                273499                                      
+SYS                  WRH$_TABLESPACE_SPACE_USAGE        244946                                      
+SYS                  WRH$_TABLESPACE_STAT               235775                                      
+SYS                  WRH$_WAITSTAT                      169758                                      
+SYS                  WRI$_ADV_MESSAGE_GROUPS            299963                                      
+SYS                  WRI$_ADV_PARAMETERS                197824                                      
+SYS                  WRI$_OPTSTAT_HISTGRM_HISTORY      8579067                                      
+SYS                  WRI$_OPTSTAT_HISTHEAD_HISTORY      407404                                      
+SYS                  WRI$_OPTSTAT_OPR_TASKS             105925                                      
+SYS                  WRI$_OPTSTAT_SYNOPSIS$           30087421                                      
+SYS                  WRI$_RCS_2411_1                    418322                                      
+SYS                  WRM$_SNAPSHOT_DETAILS              847890                                      
+SYS                  WRP$_REPORTS                       135262                                      
+SYS                  WRP$_REPORTS_DETAILS               135262                                      
+SYS                  WRP$_REPORTS_TIME_BANDS            135390                                      
+SYSTEM               LOGMNR_COL$                        407700                                      
+SYSTEM               LOGMNR_OBJ$                        104675                                      
+
+57 rows selected.
+
+
+Statistics
+----------------------------------------------------------                                          
+          0  recursive calls                                                                        
+          0  db block gets                                                                          
+       1409  consistent gets                                                                        
+          0  physical reads                                                                         
+          0  redo size                                                                              
+       2515  bytes sent via SQL*Net to client                                                       
+        533  bytes received via SQL*Net from client                                                 
+          5  SQL*Net roundtrips to/from client                                                      
+          0  sorts (memory)                                                                         
+          0  sorts (disk)                                                                           
+         57  rows processed                                                                         
+
+SQL > set autotrace off
+SQL > 
+SQL > 
+SQL > --
+SQL > -- notice:
+SQL > -- qry did many block-access to return only few rows.
+SQL > -- (a full table scan might have been more efficient...)
+SQL > --
+SQL > 
+SQL > accept press_enter prompt "press enter to continue..."
+press enter to continue...
+SQL > 
+SQL > 
+SQL > 
+SQL > --
+SQL > -- now we will recreate an inflated PK_index, but keep the same PK
+SQL > --
+SQL > 
+SQL > alter table ovl drop constraint ovl_pk keep index ;
+
+Table altered.
+
+SQL > -- do not drop: drop index ovl_pk_ind yet ;
+SQL > 
+SQL > insert into ovl ( owner, table_name ) values ('SYS', 'DUAL' );
+insert into ovl ( owner, table_name ) values ('SYS', 'DUAL' )
+*
+ERROR at line 1:
+ORA-00001: unique constraint (PDEVISSER.OVL_PK_IND) violated 
+
+
+SQL > 
+SQL > prompt Constraint dropped, but the UK is still here.
+Constraint dropped, but the UK is still here.
+SQL > accept press_enter prompt "pk dropped, constraint still active..."
+pk dropped, constraint still active...
+SQL > 
+SQL > create index OVL_PK_fat_ind on ovl ( OWNER, TABLE_NAME, NUM_ROWS );
+
+Index created.
+
+SQL > alter table OVL add constraint OVL_PK PRIMARY KEY ( OWNER, TABLE_NAME ) using index ovl_pk_fat_ind ;
+
+Table altered.
+
+SQL > -- now drop
+SQL > drop index ovl_pk_ind ;
+
+Index dropped.
+
+SQL > 
+SQL > accept press_enter prompt "pk replaced,  enter to continue..."
+pk replaced,  enter to continue...
+SQL > 
+SQL > insert into ovl ( owner, table_name ) values ('SYS', 'DUAL' );
+insert into ovl ( owner, table_name ) values ('SYS', 'DUAL' )
+*
+ERROR at line 1:
+ORA-00001: unique constraint (PDEVISSER.OVL_PK) violated 
+
+
+SQL > 
+SQL > --
+SQL > -- notice:
+SQL > -- The PK is still the same two fields,
+SQL > -- and the constraint is in effect (ORA-00001).
+SQL > -- But the index contains 3 (three) fields,
+SQL > -- and the Index is non-unique.
+SQL > --
+SQL > 
+SQL > accept press_enter prompt "press enter to continue..."
+press enter to continue...
+SQL > 
+SQL > --
+SQL > -- again, do qry twice to reduce effect of recursive sql at parse.
+SQL > --
+SQL > 
+SQL > select
+  2  	     owner, table_name
+  3  from
+  4  	     ovl
+  5  where
+  6  	    owner like 'SY%' and
+  7  	    num_rows > 100000
+  8  /
+
+OWNER                TABLE_NAME                                                                     
+-------------------- ------------------------------                                                 
+SYS                  COL$                                                                           
+SYS                  HISTGRM$                                                                       
+SYS                  SOURCE$                                                                        
+SYS                  WRH$_ACTIVE_SESSION_HISTORY                                                    
+SYS                  WRH$_BG_EVENT_SUMMARY                                                          
+SYS                  WRH$_DB_CACHE_ADVICE                                                           
+SYS                  WRH$_ENQUEUE_STAT                                                              
+SYS                  WRH$_EVENT_HISTOGRAM                                                           
+SYS                  WRH$_FILESTATXS                                                                
+SYS                  WRH$_IOSTAT_DETAIL                                                             
+SYS                  WRH$_IOSTAT_FILETYPE                                                           
+SYS                  WRH$_IOSTAT_FUNCTION                                                           
+SYS                  WRH$_JAVA_POOL_ADVICE                                                          
+SYS                  WRH$_LATCH                                                                     
+SYS                  WRH$_LATCH_MISSES_SUMMARY                                                      
+SYS                  WRH$_LIBRARYCACHE                                                              
+SYS                  WRH$_MEM_DYNAMIC_COMP                                                          
+SYS                  WRH$_MUTEX_SLEEP                                                               
+SYS                  WRH$_MVPARAMETER                                                               
+SYS                  WRH$_OSSTAT                                                                    
+SYS                  WRH$_PARAMETER                                                                 
+SYS                  WRH$_PERSISTENT_QMN_CACHE                                                      
+SYS                  WRH$_PGASTAT                                                                   
+SYS                  WRH$_PGA_TARGET_ADVICE                                                         
+SYS                  WRH$_RESOURCE_LIMIT                                                            
+SYS                  WRH$_ROWCACHE_SUMMARY                                                          
+SYS                  WRH$_SEG_STAT                                                                  
+SYS                  WRH$_SERVICE_STAT                                                              
+SYS                  WRH$_SERVICE_WAIT_CLASS                                                        
+SYS                  WRH$_SGASTAT                                                                   
+SYS                  WRH$_SGA_TARGET_ADVICE                                                         
+SYS                  WRH$_SHARED_POOL_ADVICE                                                        
+SYS                  WRH$_SQLSTAT                                                                   
+SYS                  WRH$_SQL_PLAN                                                                  
+SYS                  WRH$_SQL_WORKAREA_HISTOGRAM                                                    
+SYS                  WRH$_STREAMS_POOL_ADVICE                                                       
+SYS                  WRH$_SYSMETRIC_HISTORY                                                         
+SYS                  WRH$_SYSMETRIC_SUMMARY                                                         
+SYS                  WRH$_SYSSTAT                                                                   
+SYS                  WRH$_SYSTEM_EVENT                                                              
+SYS                  WRH$_SYS_TIME_MODEL                                                            
+SYS                  WRH$_TABLESPACE_SPACE_USAGE                                                    
+SYS                  WRH$_TABLESPACE_STAT                                                           
+SYS                  WRH$_WAITSTAT                                                                  
+SYS                  WRI$_ADV_MESSAGE_GROUPS                                                        
+SYS                  WRI$_ADV_PARAMETERS                                                            
+SYS                  WRI$_OPTSTAT_HISTGRM_HISTORY                                                   
+SYS                  WRI$_OPTSTAT_HISTHEAD_HISTORY                                                  
+SYS                  WRI$_OPTSTAT_OPR_TASKS                                                         
+SYS                  WRI$_OPTSTAT_SYNOPSIS$                                                         
+SYS                  WRI$_RCS_2411_1                                                                
+SYS                  WRM$_SNAPSHOT_DETAILS                                                          
+SYS                  WRP$_REPORTS                                                                   
+SYS                  WRP$_REPORTS_DETAILS                                                           
+SYS                  WRP$_REPORTS_TIME_BANDS                                                        
+SYSTEM               LOGMNR_COL$                                                                    
+SYSTEM               LOGMNR_OBJ$                                                                    
+
+57 rows selected.
+
+SQL > select * from table(dbms_xplan.display_cursor('',null,'BASIC'));
+
+PLAN_TABLE_OUTPUT                                                                                   
+----------------------------------------------------------------------------------------------------
+EXPLAINED SQL STATEMENT:                                                                            
+------------------------                                                                            
+select         owner, table_name from         ovl where        owner                                
+like :"SYS_B_0" and        num_rows > :"SYS_B_1"                                                    
+                                                                                                    
+Plan hash value: 3758346974                                                                         
+                                                                                                    
+-------------------------------------------                                                         
+| Id  | Operation        | Name           |                                                         
+-------------------------------------------                                                         
+|   0 | SELECT STATEMENT |                |                                                         
+|   1 |  INDEX RANGE SCAN| OVL_PK_FAT_IND |                                                         
+-------------------------------------------                                                         
+                                                                                                    
+
+14 rows selected.
+
+SQL > 
+SQL > --
+SQL > -- notice:
+SQL > -- only PK-range-scan, only need to read the index
+SQL > --
+SQL > 
+SQL > accept press_enter prompt "press enter to continue..."
+press enter to continue...
+SQL > 
+SQL > set autotrace on stat
+SQL > select
+  2  	     owner, table_name
+  3  from
+  4  	     ovl
+  5  where
+  6  	    owner like 'SY%' and
+  7  	    num_rows > 100000
+  8  /
+
+OWNER                TABLE_NAME                                                                     
+-------------------- ------------------------------                                                 
+SYS                  COL$                                                                           
+SYS                  HISTGRM$                                                                       
+SYS                  SOURCE$                                                                        
+SYS                  WRH$_ACTIVE_SESSION_HISTORY                                                    
+SYS                  WRH$_BG_EVENT_SUMMARY                                                          
+SYS                  WRH$_DB_CACHE_ADVICE                                                           
+SYS                  WRH$_ENQUEUE_STAT                                                              
+SYS                  WRH$_EVENT_HISTOGRAM                                                           
+SYS                  WRH$_FILESTATXS                                                                
+SYS                  WRH$_IOSTAT_DETAIL                                                             
+SYS                  WRH$_IOSTAT_FILETYPE                                                           
+SYS                  WRH$_IOSTAT_FUNCTION                                                           
+SYS                  WRH$_JAVA_POOL_ADVICE                                                          
+SYS                  WRH$_LATCH                                                                     
+SYS                  WRH$_LATCH_MISSES_SUMMARY                                                      
+SYS                  WRH$_LIBRARYCACHE                                                              
+SYS                  WRH$_MEM_DYNAMIC_COMP                                                          
+SYS                  WRH$_MUTEX_SLEEP                                                               
+SYS                  WRH$_MVPARAMETER                                                               
+SYS                  WRH$_OSSTAT                                                                    
+SYS                  WRH$_PARAMETER                                                                 
+SYS                  WRH$_PERSISTENT_QMN_CACHE                                                      
+SYS                  WRH$_PGASTAT                                                                   
+SYS                  WRH$_PGA_TARGET_ADVICE                                                         
+SYS                  WRH$_RESOURCE_LIMIT                                                            
+SYS                  WRH$_ROWCACHE_SUMMARY                                                          
+SYS                  WRH$_SEG_STAT                                                                  
+SYS                  WRH$_SERVICE_STAT                                                              
+SYS                  WRH$_SERVICE_WAIT_CLASS                                                        
+SYS                  WRH$_SGASTAT                                                                   
+SYS                  WRH$_SGA_TARGET_ADVICE                                                         
+SYS                  WRH$_SHARED_POOL_ADVICE                                                        
+SYS                  WRH$_SQLSTAT                                                                   
+SYS                  WRH$_SQL_PLAN                                                                  
+SYS                  WRH$_SQL_WORKAREA_HISTOGRAM                                                    
+SYS                  WRH$_STREAMS_POOL_ADVICE                                                       
+SYS                  WRH$_SYSMETRIC_HISTORY                                                         
+SYS                  WRH$_SYSMETRIC_SUMMARY                                                         
+SYS                  WRH$_SYSSTAT                                                                   
+SYS                  WRH$_SYSTEM_EVENT                                                              
+SYS                  WRH$_SYS_TIME_MODEL                                                            
+SYS                  WRH$_TABLESPACE_SPACE_USAGE                                                    
+SYS                  WRH$_TABLESPACE_STAT                                                           
+SYS                  WRH$_WAITSTAT                                                                  
+SYS                  WRI$_ADV_MESSAGE_GROUPS                                                        
+SYS                  WRI$_ADV_PARAMETERS                                                            
+SYS                  WRI$_OPTSTAT_HISTGRM_HISTORY                                                   
+SYS                  WRI$_OPTSTAT_HISTHEAD_HISTORY                                                  
+SYS                  WRI$_OPTSTAT_OPR_TASKS                                                         
+SYS                  WRI$_OPTSTAT_SYNOPSIS$                                                         
+SYS                  WRI$_RCS_2411_1                                                                
+SYS                  WRM$_SNAPSHOT_DETAILS                                                          
+SYS                  WRP$_REPORTS                                                                   
+SYS                  WRP$_REPORTS_DETAILS                                                           
+SYS                  WRP$_REPORTS_TIME_BANDS                                                        
+SYSTEM               LOGMNR_COL$                                                                    
+SYSTEM               LOGMNR_OBJ$                                                                    
+
+57 rows selected.
+
+
+Statistics
+----------------------------------------------------------                                          
+          0  recursive calls                                                                        
+          0  db block gets                                                                          
+         14  consistent gets                                                                        
+          0  physical reads                                                                         
+          0  redo size                                                                              
+       2160  bytes sent via SQL*Net to client                                                       
+        533  bytes received via SQL*Net from client                                                 
+          5  SQL*Net roundtrips to/from client                                                      
+          0  sorts (memory)                                                                         
+          0  sorts (disk)                                                                           
+         57  rows processed                                                                         
+
+SQL > set autotrace off
+SQL > 
+SQL > --
+SQL > -- notice: Reduced nr of consitent-gets, no more table-access.
+SQL > -- we scanned a lot less blocks by just using the index.
+SQL > -- this shows how index-only access is a beneficial.
+SQL > --
+SQL > 
+SQL > accept press_enter prompt "press enter to continue..."
+press enter to continue...
+SQL > 
+SQL > --
+SQL > -- note:
+SQL > -- If we have to retrieve More columns,
+SQL > -- we will have to access the table.
+SQL > --
+SQL > -- But the index (with additional field) is still beneficial.
+SQL > -- better filtering means less table-access....
+SQL > --
+SQL > 
+SQL > accept press_enter prompt "press enter to continue..."
+press enter to continue...
+SQL > 
+SQL > select
+  2  	 owner, table_name, num_rows, status
+  3  from
+  4  	 ovl
+  5  where
+  6  	     owner like 'SY%' and
+  7  	     num_rows > 100000
+  8  /
+
+OWNER                TABLE_NAME                       NUM_ROWS STATUS                               
+-------------------- ------------------------------ ---------- --------                             
+SYS                  COL$                               103887 VALID                                
+SYS                  HISTGRM$                           727948 VALID                                
+SYS                  SOURCE$                            247559 VALID                                
+SYS                  WRH$_ACTIVE_SESSION_HISTORY       2654997 VALID                                
+SYS                  WRH$_BG_EVENT_SUMMARY             1068617 VALID                                
+SYS                  WRH$_DB_CACHE_ADVICE               198322 VALID                                
+SYS                  WRH$_ENQUEUE_STAT                  980356 VALID                                
+SYS                  WRH$_EVENT_HISTOGRAM             11389174 VALID                                
+SYS                  WRH$_FILESTATXS                    237400 VALID                                
+SYS                  WRH$_IOSTAT_DETAIL                 165102 VALID                                
+SYS                  WRH$_IOSTAT_FILETYPE               122473 VALID                                
+SYS                  WRH$_IOSTAT_FUNCTION               141315 VALID                                
+SYS                  WRH$_JAVA_POOL_ADVICE              111869 VALID                                
+SYS                  WRH$_LATCH                        7261870 VALID                                
+SYS                  WRH$_LATCH_MISSES_SUMMARY         2172012 VALID                                
+SYS                  WRH$_LIBRARYCACHE                  275011 VALID                                
+SYS                  WRH$_MEM_DYNAMIC_COMP              169578 VALID                                
+SYS                  WRH$_MUTEX_SLEEP                   447997 VALID                                
+SYS                  WRH$_MVPARAMETER                   716756 VALID                                
+SYS                  WRH$_OSSTAT                        245206 VALID                                
+SYS                  WRH$_PARAMETER                    3734676 VALID                                
+SYS                  WRH$_PERSISTENT_QMN_CACHE          150736 VALID                                
+SYS                  WRH$_PGASTAT                       157105 VALID                                
+SYS                  WRH$_PGA_TARGET_ADVICE             131894 VALID                                
+SYS                  WRH$_RESOURCE_LIMIT                207262 VALID                                
+SYS                  WRH$_ROWCACHE_SUMMARY              556429 VALID                                
+SYS                  WRH$_SEG_STAT                     1081474 VALID                                
+SYS                  WRH$_SERVICE_STAT                  792204 VALID                                
+SYS                  WRH$_SERVICE_WAIT_CLASS            198744 VALID                                
+SYS                  WRH$_SGASTAT                       128388 VALID                                
+SYS                  WRH$_SGA_TARGET_ADVICE             301472 VALID                                
+SYS                  WRH$_SHARED_POOL_ADVICE            297794 VALID                                
+SYS                  WRH$_SQLSTAT                      1808740 VALID                                
+SYS                  WRH$_SQL_PLAN                      430105 VALID                                
+SYS                  WRH$_SQL_WORKAREA_HISTOGRAM        188956 VALID                                
+SYS                  WRH$_STREAMS_POOL_ADVICE           188420 VALID                                
+SYS                  WRH$_SYSMETRIC_HISTORY            3248911 VALID                                
+SYS                  WRH$_SYSMETRIC_SUMMARY            1516137 VALID                                
+SYS                  WRH$_SYSSTAT                     11109718 VALID                                
+SYS                  WRH$_SYSTEM_EVENT                 1520014 VALID                                
+SYS                  WRH$_SYS_TIME_MODEL                273499 VALID                                
+SYS                  WRH$_TABLESPACE_SPACE_USAGE        244946 VALID                                
+SYS                  WRH$_TABLESPACE_STAT               235775 VALID                                
+SYS                  WRH$_WAITSTAT                      169758 VALID                                
+SYS                  WRI$_ADV_MESSAGE_GROUPS            299963 VALID                                
+SYS                  WRI$_ADV_PARAMETERS                197824 VALID                                
+SYS                  WRI$_OPTSTAT_HISTGRM_HISTORY      8579067 VALID                                
+SYS                  WRI$_OPTSTAT_HISTHEAD_HISTORY      407404 VALID                                
+SYS                  WRI$_OPTSTAT_OPR_TASKS             105925 VALID                                
+SYS                  WRI$_OPTSTAT_SYNOPSIS$           30087421 VALID                                
+SYS                  WRI$_RCS_2411_1                    418322 VALID                                
+SYS                  WRM$_SNAPSHOT_DETAILS              847890 VALID                                
+SYS                  WRP$_REPORTS                       135262 VALID                                
+SYS                  WRP$_REPORTS_DETAILS               135262 VALID                                
+SYS                  WRP$_REPORTS_TIME_BANDS            135390 VALID                                
+SYSTEM               LOGMNR_COL$                        407700 VALID                                
+SYSTEM               LOGMNR_OBJ$                        104675 VALID                                
+
+57 rows selected.
+
+SQL > select * from table(dbms_xplan.display_cursor('',null,'BASIC'));
+
+PLAN_TABLE_OUTPUT                                                                                   
+----------------------------------------------------------------------------------------------------
+EXPLAINED SQL STATEMENT:                                                                            
+------------------------                                                                            
+select     owner, table_name, num_rows, status from     ovl where                                   
+  owner like :"SYS_B_0" and         num_rows > :"SYS_B_1"                                           
+                                                                                                    
+Plan hash value: 2485187899                                                                         
+                                                                                                    
+--------------------------------------------------------------                                      
+| Id  | Operation                           | Name           |                                      
+--------------------------------------------------------------                                      
+|   0 | SELECT STATEMENT                    |                |                                      
+|   1 |  TABLE ACCESS BY INDEX ROWID BATCHED| OVL            |                                      
+|   2 |   INDEX RANGE SCAN                  | OVL_PK_FAT_IND |                                      
+--------------------------------------------------------------                                      
+                                                                                                    
+
+15 rows selected.
+
+SQL > 
+SQL > --
+SQL > -- notice:
+SQL > -- the access is now PK + acces-by-rowid again
+SQL > --
+SQL > accept press_enter prompt "press enter to continue..."
+press enter to continue...
+SQL > 
+SQL > set autotrace on stat
+SQL > select
+  2  	 owner, table_name, num_rows, status
+  3  from
+  4  	 ovl
+  5  where
+  6  	     owner like 'SY%' and
+  7  	     num_rows > 100000
+  8  /
+
+OWNER                TABLE_NAME                       NUM_ROWS STATUS                               
+-------------------- ------------------------------ ---------- --------                             
+SYS                  COL$                               103887 VALID                                
+SYS                  HISTGRM$                           727948 VALID                                
+SYS                  SOURCE$                            247559 VALID                                
+SYS                  WRH$_ACTIVE_SESSION_HISTORY       2654997 VALID                                
+SYS                  WRH$_BG_EVENT_SUMMARY             1068617 VALID                                
+SYS                  WRH$_DB_CACHE_ADVICE               198322 VALID                                
+SYS                  WRH$_ENQUEUE_STAT                  980356 VALID                                
+SYS                  WRH$_EVENT_HISTOGRAM             11389174 VALID                                
+SYS                  WRH$_FILESTATXS                    237400 VALID                                
+SYS                  WRH$_IOSTAT_DETAIL                 165102 VALID                                
+SYS                  WRH$_IOSTAT_FILETYPE               122473 VALID                                
+SYS                  WRH$_IOSTAT_FUNCTION               141315 VALID                                
+SYS                  WRH$_JAVA_POOL_ADVICE              111869 VALID                                
+SYS                  WRH$_LATCH                        7261870 VALID                                
+SYS                  WRH$_LATCH_MISSES_SUMMARY         2172012 VALID                                
+SYS                  WRH$_LIBRARYCACHE                  275011 VALID                                
+SYS                  WRH$_MEM_DYNAMIC_COMP              169578 VALID                                
+SYS                  WRH$_MUTEX_SLEEP                   447997 VALID                                
+SYS                  WRH$_MVPARAMETER                   716756 VALID                                
+SYS                  WRH$_OSSTAT                        245206 VALID                                
+SYS                  WRH$_PARAMETER                    3734676 VALID                                
+SYS                  WRH$_PERSISTENT_QMN_CACHE          150736 VALID                                
+SYS                  WRH$_PGASTAT                       157105 VALID                                
+SYS                  WRH$_PGA_TARGET_ADVICE             131894 VALID                                
+SYS                  WRH$_RESOURCE_LIMIT                207262 VALID                                
+SYS                  WRH$_ROWCACHE_SUMMARY              556429 VALID                                
+SYS                  WRH$_SEG_STAT                     1081474 VALID                                
+SYS                  WRH$_SERVICE_STAT                  792204 VALID                                
+SYS                  WRH$_SERVICE_WAIT_CLASS            198744 VALID                                
+SYS                  WRH$_SGASTAT                       128388 VALID                                
+SYS                  WRH$_SGA_TARGET_ADVICE             301472 VALID                                
+SYS                  WRH$_SHARED_POOL_ADVICE            297794 VALID                                
+SYS                  WRH$_SQLSTAT                      1808740 VALID                                
+SYS                  WRH$_SQL_PLAN                      430105 VALID                                
+SYS                  WRH$_SQL_WORKAREA_HISTOGRAM        188956 VALID                                
+SYS                  WRH$_STREAMS_POOL_ADVICE           188420 VALID                                
+SYS                  WRH$_SYSMETRIC_HISTORY            3248911 VALID                                
+SYS                  WRH$_SYSMETRIC_SUMMARY            1516137 VALID                                
+SYS                  WRH$_SYSSTAT                     11109718 VALID                                
+SYS                  WRH$_SYSTEM_EVENT                 1520014 VALID                                
+SYS                  WRH$_SYS_TIME_MODEL                273499 VALID                                
+SYS                  WRH$_TABLESPACE_SPACE_USAGE        244946 VALID                                
+SYS                  WRH$_TABLESPACE_STAT               235775 VALID                                
+SYS                  WRH$_WAITSTAT                      169758 VALID                                
+SYS                  WRI$_ADV_MESSAGE_GROUPS            299963 VALID                                
+SYS                  WRI$_ADV_PARAMETERS                197824 VALID                                
+SYS                  WRI$_OPTSTAT_HISTGRM_HISTORY      8579067 VALID                                
+SYS                  WRI$_OPTSTAT_HISTHEAD_HISTORY      407404 VALID                                
+SYS                  WRI$_OPTSTAT_OPR_TASKS             105925 VALID                                
+SYS                  WRI$_OPTSTAT_SYNOPSIS$           30087421 VALID                                
+SYS                  WRI$_RCS_2411_1                    418322 VALID                                
+SYS                  WRM$_SNAPSHOT_DETAILS              847890 VALID                                
+SYS                  WRP$_REPORTS                       135262 VALID                                
+SYS                  WRP$_REPORTS_DETAILS               135262 VALID                                
+SYS                  WRP$_REPORTS_TIME_BANDS            135390 VALID                                
+SYSTEM               LOGMNR_COL$                        407700 VALID                                
+SYSTEM               LOGMNR_OBJ$                        104675 VALID                                
+
+57 rows selected.
+
+
+Statistics
+----------------------------------------------------------                                          
+          0  recursive calls                                                                        
+          0  db block gets                                                                          
+         70  consistent gets                                                                        
+          0  physical reads                                                                         
+          0  redo size                                                                              
+       2736  bytes sent via SQL*Net to client                                                       
+        533  bytes received via SQL*Net from client                                                 
+          5  SQL*Net roundtrips to/from client                                                      
+          0  sorts (memory)                                                                         
+          0  sorts (disk)                                                                           
+         57  rows processed                                                                         
+
+SQL > set autotrace off
+SQL > 
+SQL > --
+SQL > -- but notice:
+SQL > -- despite the additional acces-by-rowid,
+SQL > -- we accessed less rows then in the original qry: Filtering!
+SQL > --
+SQL > 
+SQL > accept press_enter prompt "press enter to continue..."
+press enter to continue...
+SQL > 
+SQL > --
+SQL > -- and now select less rows in the result set
+SQL > -- and we see the consistent gets go down..
+SQL > --
+SQL > select
+  2  	 owner, table_name, num_rows, status
+  3  from
+  4  	 ovl
+  5  where
+  6  	     owner like 'SY%' and
+  7  	     num_rows > 1000000
+  8  /
+
+OWNER                TABLE_NAME                       NUM_ROWS STATUS                               
+-------------------- ------------------------------ ---------- --------                             
+SYS                  WRH$_ACTIVE_SESSION_HISTORY       2654997 VALID                                
+SYS                  WRH$_BG_EVENT_SUMMARY             1068617 VALID                                
+SYS                  WRH$_EVENT_HISTOGRAM             11389174 VALID                                
+SYS                  WRH$_LATCH                        7261870 VALID                                
+SYS                  WRH$_LATCH_MISSES_SUMMARY         2172012 VALID                                
+SYS                  WRH$_PARAMETER                    3734676 VALID                                
+SYS                  WRH$_SEG_STAT                     1081474 VALID                                
+SYS                  WRH$_SQLSTAT                      1808740 VALID                                
+SYS                  WRH$_SYSMETRIC_HISTORY            3248911 VALID                                
+SYS                  WRH$_SYSMETRIC_SUMMARY            1516137 VALID                                
+SYS                  WRH$_SYSSTAT                     11109718 VALID                                
+SYS                  WRH$_SYSTEM_EVENT                 1520014 VALID                                
+SYS                  WRI$_OPTSTAT_HISTGRM_HISTORY      8579067 VALID                                
+SYS                  WRI$_OPTSTAT_SYNOPSIS$           30087421 VALID                                
+
+14 rows selected.
+
+SQL > select * from table(dbms_xplan.display_cursor('',null,'BASIC'));
+
+PLAN_TABLE_OUTPUT                                                                                   
+----------------------------------------------------------------------------------------------------
+EXPLAINED SQL STATEMENT:                                                                            
+------------------------                                                                            
+select     owner, table_name, num_rows, status from     ovl where                                   
+  owner like :"SYS_B_0" and         num_rows > :"SYS_B_1"                                           
+                                                                                                    
+Plan hash value: 2485187899                                                                         
+                                                                                                    
+--------------------------------------------------------------                                      
+| Id  | Operation                           | Name           |                                      
+--------------------------------------------------------------                                      
+|   0 | SELECT STATEMENT                    |                |                                      
+|   1 |  TABLE ACCESS BY INDEX ROWID BATCHED| OVL            |                                      
+|   2 |   INDEX RANGE SCAN                  | OVL_PK_FAT_IND |                                      
+--------------------------------------------------------------                                      
+                                                                                                    
+
+15 rows selected.
+
+SQL > 
+SQL > --
+SQL > -- we selected less rows...
+SQL > --
+SQL > --
+SQL > accept press_enter prompt "press enter to continue..."
+press enter to continue...
+SQL > 
+SQL > set autotrace on stat
+SQL > select
+  2  	 owner, table_name, num_rows, status
+  3  from
+  4  	 ovl
+  5  where
+  6  	     owner like 'SY%' and
+  7  	     num_rows > 1000000
+  8  
+SQL > 
+SQL > /
+
+OWNER                TABLE_NAME                       NUM_ROWS STATUS                               
+-------------------- ------------------------------ ---------- --------                             
+SYS                  WRH$_ACTIVE_SESSION_HISTORY       2654997 VALID                                
+SYS                  WRH$_BG_EVENT_SUMMARY             1068617 VALID                                
+SYS                  WRH$_EVENT_HISTOGRAM             11389174 VALID                                
+SYS                  WRH$_LATCH                        7261870 VALID                                
+SYS                  WRH$_LATCH_MISSES_SUMMARY         2172012 VALID                                
+SYS                  WRH$_PARAMETER                    3734676 VALID                                
+SYS                  WRH$_SEG_STAT                     1081474 VALID                                
+SYS                  WRH$_SQLSTAT                      1808740 VALID                                
+SYS                  WRH$_SYSMETRIC_HISTORY            3248911 VALID                                
+SYS                  WRH$_SYSMETRIC_SUMMARY            1516137 VALID                                
+SYS                  WRH$_SYSSTAT                     11109718 VALID                                
+SYS                  WRH$_SYSTEM_EVENT                 1520014 VALID                                
+SYS                  WRI$_OPTSTAT_HISTGRM_HISTORY      8579067 VALID                                
+SYS                  WRI$_OPTSTAT_SYNOPSIS$           30087421 VALID                                
+
+14 rows selected.
+
+
+Statistics
+----------------------------------------------------------                                          
+          0  recursive calls                                                                        
+          0  db block gets                                                                          
+         25  consistent gets                                                                        
+          0  physical reads                                                                         
+          0  redo size                                                                              
+       1040  bytes sent via SQL*Net to client                                                       
+        500  bytes received via SQL*Net from client                                                 
+          2  SQL*Net roundtrips to/from client                                                      
+          0  sorts (memory)                                                                         
+          0  sorts (disk)                                                                           
+         14  rows processed                                                                         
+
+SQL > set autotrace off
+SQL > 
+SQL > --
+SQL > -- Notice:
+SQL > -- We selected less rows,
+SQL > -- the rows were filtered out by the index,
+SQL > -- all where-fields were in the index,
+SQL > -- and the query doesnt visit the row-blocks
+SQL > -- if it doesnt "need" the column-values.
+SQL > -- Thus we have even less gets..
+SQL > --
+SQL > --
+SQL > 
+SQL > accept press_enter prompt "press enter to continue..."
+press enter to continue...
+SQL > 
+SQL > --
+SQL > -- Recap:
+SQL > -- 1. we showed how an overloaded index can help qry-efficiency
+SQL > -- 2. we showed how even a PK-index can be overloaded and still be a PK
+SQL > --
+SQL > -- Of course, I will _not_ show you:
+SQL > -- a. the downsides of overloaded indexes (slow DML, extra redo)
+SQL > -- b. PK-index is now non-unique. The defined Constraint enforces it.
+SQL > -- c. Trickery to force demo to work with the too-clever CBO.
+SQL > --    (old fashioned first_rows, PLEASE DONT USE, or: get rid of quickly!).
+SQL > --
+SQL > 
+SQL > spool off

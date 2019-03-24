@@ -1,0 +1,289 @@
+
+  COUNT(*)                                                                                                              
+----------                                                                                                              
+        46                                                                                                              
+
+1 row selected.
+
+Elapsed: 00:00:00.60
+
+Execution Plan
+----------------------------------------------------------                                                              
+Plan hash value: 2171016159                                                                                             
+                                                                                                                        
+---------------------------------------------------------------------------------------------------------------         
+| Id  | Operation                      | Name                         | Rows  | Bytes | Cost (%CPU)| Time     |         
+---------------------------------------------------------------------------------------------------------------         
+|   0 | SELECT STATEMENT               |                              |     1 |    82 |   401   (0)| 00:00:01 |         
+|   1 |  SORT AGGREGATE                |                              |     1 |    82 |            |          |         
+|*  2 |   FILTER                       |                              |       |       |            |          |         
+|   3 |    NESTED LOOPS                |                              |     1 |    82 |   401   (0)| 00:00:01 |         
+|   4 |     NESTED LOOPS               |                              |     1 |    82 |   401   (0)| 00:00:01 |         
+|   5 |      NESTED LOOPS              |                              |     1 |    70 |   398   (0)| 00:00:01 |         
+|   6 |       NESTED LOOPS             |                              |   196 |  6860 |     6   (0)| 00:00:01 |         
+|   7 |        NESTED LOOPS            |                              |     1 |    21 |     3   (0)| 00:00:01 |         
+|*  8 |         INDEX RANGE SCAN       | PIL_LOC_UN_CODE_ID_P1107     |     1 |    11 |     2   (0)| 00:00:01 |         
+|*  9 |         INDEX RANGE SCAN       | PIL_POR_LOC_FK_ID_P1107      |     1 |    10 |     1   (0)| 00:00:01 |         
+|* 10 |        INDEX RANGE SCAN        | PIL_VIS_POR_FK_DISC_ID_IND   |   196 |  2744 |     3   (0)| 00:00:01 |         
+|* 11 |       INDEX RANGE SCAN         | EM_VCP_VIS_FK_ARR_DEP_ID_IND |     1 |    35 |     2   (0)| 00:00:01 |         
+|* 12 |      INDEX UNIQUE SCAN         | PIL_SEP_PK                   |     1 |       |     2   (0)| 00:00:01 |         
+|* 13 |     TABLE ACCESS BY INDEX ROWID| PIL_SERVICE_PROCESSES        |     1 |    12 |     3   (0)| 00:00:01 |         
+---------------------------------------------------------------------------------------------------------------         
+                                                                                                                        
+Predicate Information (identified by operation id):                                                                     
+---------------------------------------------------                                                                     
+                                                                                                                        
+   2 - filter(SYSTIMESTAMP(6)+10>SYSTIMESTAMP(6)-10)                                                                    
+   8 - access("T2"."UN_CODE"=:B11)                                                                                      
+   9 - access("T2"."ID"="T3"."LOC_ID")                                                                                  
+  10 - access("T3"."ID"="T4"."POR_ID" AND "T4"."DISCRIMINATOR"=:B13)                                                    
+  11 - access("T4"."ID"="T1"."VIS_ID" AND "T1"."ARRIVAL_TIME_DRV">=SYSTIMESTAMP(6)-10 AND                               
+              "T1"."DEPARTURE_TIME_DRV">=SYSTIMESTAMP(6)-10 AND "T1"."ARRIVAL_TIME_DRV"<SYSTIMESTAMP(6)+10 AND          
+              "T1"."DEPARTURE_TIME_DRV"<SYSTIMESTAMP(6)+10)                                                             
+       filter("T1"."DEPARTURE_TIME_DRV">=SYSTIMESTAMP(6)-10 AND                                                         
+              "T1"."DEPARTURE_TIME_DRV"<SYSTIMESTAMP(6)+10)                                                             
+  12 - access("T1"."ID"="T0"."ID")                                                                                      
+  13 - filter("T0"."DISCRIMINATOR"=:B12)                                                                                
+                                                                                                                        
+Note                                                                                                                    
+-----                                                                                                                   
+   - automatic DOP: Computed Degree of Parallelism is 1 because of parallel threshold                                   
+   - this is an adaptive plan                                                                                           
+
+
+Statistics
+----------------------------------------------------------                                                              
+        175  recursive calls                                                                                            
+          0  db block gets                                                                                              
+       8885  consistent gets                                                                                            
+          0  physical reads                                                                                             
+          0  redo size                                                                                                  
+        358  bytes sent via SQL*Net to client                                                                           
+        500  bytes received via SQL*Net from client                                                                     
+          2  SQL*Net roundtrips to/from client                                                                          
+          6  sorts (memory)                                                                                             
+          0  sorts (disk)                                                                                               
+          1  rows processed                                                                                             
+
+
+        ID UN_CO         ID CREATION_DATE                                                                               
+---------- ----- ---------- --------------------                                                                        
+      6570 NLRTM 2669677502 15-JAN-2019 15:56:42                                                                        
+      6570 NLRTM 2677985168 13-FEB-2019 14:12:53                                                                        
+      6570 NLRTM 2677947263 13-FEB-2019 11:26:32                                                                        
+      6570 NLRTM 2672376171 16-JAN-2019 15:56:43                                                                        
+      6570 NLRTM 2676407903 05-FEB-2019 16:55:43                                                                        
+      6570 NLRTM 2677952568 13-FEB-2019 11:48:54                                                                        
+      6570 NLRTM 2677975054 13-FEB-2019 13:24:23                                                                        
+      6570 NLRTM 2673825077 23-JAN-2019 14:38:43                                                                        
+      6570 NLRTM 2669713702 15-JAN-2019 15:59:54                                                                        
+      6570 NLRTM 2673820585 23-JAN-2019 14:16:42                                                                        
+      6570 NLRTM 2673832057 23-JAN-2019 15:09:43                                                                        
+
+        ID UN_CO         ID CREATION_DATE                                                                               
+---------- ----- ---------- --------------------                                                                        
+      6570 NLRTM 2674985077 29-JAN-2019 15:04:13                                                                        
+      6570 NLRTM 2676597391 06-FEB-2019 13:46:22                                                                        
+      6570 NLRTM 2672347320 16-JAN-2019 13:54:13                                                                        
+      6570 NLRTM 2672535524 17-JAN-2019 10:44:04                                                                        
+      6570 NLRTM 2677976658 13-FEB-2019 13:32:24                                                                        
+      6570 NLRTM 2676802505 07-FEB-2019 11:51:12                                                                        
+      6570 NLRTM 2677768592 12-FEB-2019 14:30:33                                                                        
+      6570 NLRTM 2645870259 09-JAN-2019 15:22:55                                                                        
+      6570 NLRTM 2676391811 05-FEB-2019 15:54:22                                                                        
+      6570 NLRTM 2669837002 15-JAN-2019 16:02:42                                                                        
+      6570 NLRTM 2672344771 16-JAN-2019 13:42:42                                                                        
+
+        ID UN_CO         ID CREATION_DATE                                                                               
+---------- ----- ---------- --------------------                                                                        
+      6570 NLRTM 2677750994 12-FEB-2019 13:19:42                                                                        
+      6570 NLRTM 2677758132 12-FEB-2019 13:46:12                                                                        
+      6570 NLRTM 2673839990 23-JAN-2019 15:46:04                                                                        
+      6570 NLRTM 2673842428 23-JAN-2019 15:58:02                                                                        
+      6570 NLRTM 2673827437 23-JAN-2019 14:44:52                                                                        
+      6570 NLRTM 2673821797 23-JAN-2019 14:23:02                                                                        
+      6570 NLRTM 2674987106 29-JAN-2019 15:13:05                                                                        
+      6570 NLRTM 2673834485 23-JAN-2019 15:21:23                                                                        
+      6570 NLRTM 2673837671 23-JAN-2019 15:37:36                                                                        
+      6570 NLRTM 2676562971 06-FEB-2019 11:07:33                                                                        
+      6570 NLRTM 2673843667 23-JAN-2019 16:04:56                                                                        
+
+        ID UN_CO         ID CREATION_DATE                                                                               
+---------- ----- ---------- --------------------                                                                        
+      6570 NLRTM 2673847228 23-JAN-2019 16:20:32                                                                        
+      6570 NLRTM 2673824736 23-JAN-2019 14:34:13                                                                        
+      6570 NLRTM 2673795610 23-JAN-2019 12:19:56                                                                        
+      6570 NLRTM 2676575465 06-FEB-2019 11:52:54                                                                        
+      6570 NLRTM 2677964967 13-FEB-2019 12:37:25                                                                        
+      6570 NLRTM 2677751575 12-FEB-2019 13:22:22                                                                        
+      6570 NLRTM 2678174097 14-FEB-2019 10:53:32                                                                        
+      6570 NLRTM 2677764424 12-FEB-2019 14:10:53                                                                        
+      6570 NLRTM 2673842006 23-JAN-2019 15:54:42                                                                        
+      6570 NLRTM 2676790118 07-FEB-2019 11:00:46                                                                        
+      6570 NLRTM 2676831363 07-FEB-2019 14:05:03                                                                        
+
+        ID UN_CO         ID CREATION_DATE                                                                               
+---------- ----- ---------- --------------------                                                                        
+      6570 NLRTM 2676786919 07-FEB-2019 10:50:17                                                                        
+      6570 NLRTM 2673848493 23-JAN-2019 16:24:45                                                                        
+
+46 rows selected.
+
+Elapsed: 00:00:00.37
+
+        ID UN_CO         ID CREATION_DATE                                                                               
+---------- ----- ---------- --------------------                                                                        
+      6570 NLRTM 2669677502 15-JAN-2019 15:56:42                                                                        
+      6570 NLRTM 2677985168 13-FEB-2019 14:12:53                                                                        
+      6570 NLRTM 2677947263 13-FEB-2019 11:26:32                                                                        
+      6570 NLRTM 2672376171 16-JAN-2019 15:56:43                                                                        
+      6570 NLRTM 2676407903 05-FEB-2019 16:55:43                                                                        
+      6570 NLRTM 2677952568 13-FEB-2019 11:48:54                                                                        
+      6570 NLRTM 2677975054 13-FEB-2019 13:24:23                                                                        
+      6570 NLRTM 2673825077 23-JAN-2019 14:38:43                                                                        
+      6570 NLRTM 2669713702 15-JAN-2019 15:59:54                                                                        
+      6570 NLRTM 2673820585 23-JAN-2019 14:16:42                                                                        
+      6570 NLRTM 2674985077 29-JAN-2019 15:04:13                                                                        
+
+        ID UN_CO         ID CREATION_DATE                                                                               
+---------- ----- ---------- --------------------                                                                        
+      6570 NLRTM 2673832057 23-JAN-2019 15:09:43                                                                        
+      6570 NLRTM 2676597391 06-FEB-2019 13:46:22                                                                        
+      6570 NLRTM 2672347320 16-JAN-2019 13:54:13                                                                        
+      6570 NLRTM 2672535524 17-JAN-2019 10:44:04                                                                        
+      6570 NLRTM 2677976658 13-FEB-2019 13:32:24                                                                        
+      6570 NLRTM 2676802505 07-FEB-2019 11:51:12                                                                        
+      6570 NLRTM 2677768592 12-FEB-2019 14:30:33                                                                        
+      6570 NLRTM 2645870259 09-JAN-2019 15:22:55                                                                        
+      6570 NLRTM 2676391811 05-FEB-2019 15:54:22                                                                        
+      6570 NLRTM 2669837002 15-JAN-2019 16:02:42                                                                        
+      6570 NLRTM 2672344771 16-JAN-2019 13:42:42                                                                        
+
+        ID UN_CO         ID CREATION_DATE                                                                               
+---------- ----- ---------- --------------------                                                                        
+      6570 NLRTM 2677750994 12-FEB-2019 13:19:42                                                                        
+      6570 NLRTM 2677758132 12-FEB-2019 13:46:12                                                                        
+      6570 NLRTM 2673839990 23-JAN-2019 15:46:04                                                                        
+      6570 NLRTM 2673842428 23-JAN-2019 15:58:02                                                                        
+      6570 NLRTM 2673827437 23-JAN-2019 14:44:52                                                                        
+      6570 NLRTM 2673821797 23-JAN-2019 14:23:02                                                                        
+      6570 NLRTM 2673834485 23-JAN-2019 15:21:23                                                                        
+      6570 NLRTM 2674987106 29-JAN-2019 15:13:05                                                                        
+      6570 NLRTM 2673837671 23-JAN-2019 15:37:36                                                                        
+      6570 NLRTM 2676562971 06-FEB-2019 11:07:33                                                                        
+      6570 NLRTM 2673847228 23-JAN-2019 16:20:32                                                                        
+
+        ID UN_CO         ID CREATION_DATE                                                                               
+---------- ----- ---------- --------------------                                                                        
+      6570 NLRTM 2673843667 23-JAN-2019 16:04:56                                                                        
+      6570 NLRTM 2673824736 23-JAN-2019 14:34:13                                                                        
+      6570 NLRTM 2673795610 23-JAN-2019 12:19:56                                                                        
+      6570 NLRTM 2676575465 06-FEB-2019 11:52:54                                                                        
+      6570 NLRTM 2677964967 13-FEB-2019 12:37:25                                                                        
+      6570 NLRTM 2677751575 12-FEB-2019 13:22:22                                                                        
+      6570 NLRTM 2678174097 14-FEB-2019 10:53:32                                                                        
+      6570 NLRTM 2677764424 12-FEB-2019 14:10:53                                                                        
+      6570 NLRTM 2673842006 23-JAN-2019 15:54:42                                                                        
+      6570 NLRTM 2676790118 07-FEB-2019 11:00:46                                                                        
+      6570 NLRTM 2676831363 07-FEB-2019 14:05:03                                                                        
+
+        ID UN_CO         ID CREATION_DATE                                                                               
+---------- ----- ---------- --------------------                                                                        
+      6570 NLRTM 2676786919 07-FEB-2019 10:50:17                                                                        
+      6570 NLRTM 2673848493 23-JAN-2019 16:24:45                                                                        
+
+46 rows selected.
+
+Elapsed: 00:00:00.29
+
+Execution Plan
+----------------------------------------------------------                                                              
+Plan hash value: 3730931849                                                                                             
+                                                                                                                        
+------------------------------------------------------------------------------------------------------------------------
+--                                                                                                                      
+                                                                                                                        
+| Id  | Operation                                 | Name                         | Rows  | Bytes | Cost (%CPU)| Time    
+ |                                                                                                                      
+                                                                                                                        
+------------------------------------------------------------------------------------------------------------------------
+--                                                                                                                      
+                                                                                                                        
+|   0 | SELECT STATEMENT                          |                              |     1 |    89 |    11  (10)| 00:00:01
+ |                                                                                                                      
+                                                                                                                        
+|   1 |  SORT ORDER BY                            |                              |     1 |    89 |    11  (10)| 00:00:01
+ |                                                                                                                      
+                                                                                                                        
+|*  2 |   FILTER                                  |                              |       |       |            |         
+ |                                                                                                                      
+                                                                                                                        
+|   3 |    NESTED LOOPS                           |                              |     1 |    89 |    10   (0)| 00:00:01
+ |                                                                                                                      
+                                                                                                                        
+|   4 |     NESTED LOOPS                          |                              |     1 |    89 |    10   (0)| 00:00:01
+ |                                                                                                                      
+                                                                                                                        
+|   5 |      NESTED LOOPS                         |                              |     1 |    46 |     7   (0)| 00:00:01
+ |                                                                                                                      
+                                                                                                                        
+|   6 |       NESTED LOOPS                        |                              |     1 |    32 |     4   (0)| 00:00:01
+ |                                                                                                                      
+                                                                                                                        
+|*  7 |        TABLE ACCESS BY INDEX ROWID BATCHED| PIL_LOCATIONS                |     1 |    22 |     3   (0)| 00:00:01
+ |                                                                                                                      
+                                                                                                                        
+|*  8 |         INDEX RANGE SCAN                  | PIL_LOC_UN_CODE_ID_P1107     |     1 |       |     2   (0)| 00:00:01
+ |                                                                                                                      
+                                                                                                                        
+|*  9 |        INDEX RANGE SCAN                   | PIL_POR_LOC_FK_ID_P1107      |     1 |    10 |     1   (0)| 00:00:01
+ |                                                                                                                      
+                                                                                                                        
+|* 10 |       INDEX RANGE SCAN                    | PIL_VIS_POR_FK_DISC_ID_IND   |   196 |  2744 |     3   (0)| 00:00:01
+ |                                                                                                                      
+                                                                                                                        
+|* 11 |      INDEX RANGE SCAN                     | EM_VCP_VIS_FK_ARR_DEP_ID_IND |     1 |       |     2   (0)| 00:00:01
+ |                                                                                                                      
+                                                                                                                        
+|  12 |     TABLE ACCESS BY INDEX ROWID           | EM_VESSEL_CALL_PROCESSES     |     1 |    43 |     3   (0)| 00:00:01
+ |                                                                                                                      
+                                                                                                                        
+------------------------------------------------------------------------------------------------------------------------
+--                                                                                                                      
+                                                                                                                        
+                                                                                                                        
+Predicate Information (identified by operation id):                                                                     
+---------------------------------------------------                                                                     
+                                                                                                                        
+   2 - filter(SYSTIMESTAMP(6)+10>SYSTIMESTAMP(6)-10)                                                                    
+   7 - filter("T2"."NAME" LIKE 'Rotter%')                                                                               
+   8 - access("T2"."UN_CODE"='NLRTM')                                                                                   
+   9 - access("T2"."ID"="T3"."LOC_ID")                                                                                  
+  10 - access("T3"."ID"="T4"."POR_ID" AND "T4"."DISCRIMINATOR"='VE')                                                    
+  11 - access("T4"."ID"="T1"."VIS_ID" AND "T1"."ARRIVAL_TIME_DRV">=SYSTIMESTAMP(6)-10 AND                               
+              "T1"."DEPARTURE_TIME_DRV">=SYSTIMESTAMP(6)-10 AND "T1"."ARRIVAL_TIME_DRV"<SYSTIMESTAMP(6)+10 AND          
+              "T1"."DEPARTURE_TIME_DRV"<SYSTIMESTAMP(6)+10)                                                             
+       filter("T1"."DEPARTURE_TIME_DRV">=SYSTIMESTAMP(6)-10 AND "T1"."DEPARTURE_TIME_DRV"<SYSTIMESTAMP(6)+10)           
+                                                                                                                        
+Note                                                                                                                    
+-----                                                                                                                   
+   - dynamic statistics used: dynamic sampling (level=2)                                                                
+   - automatic DOP: Computed Degree of Parallelism is 1 because of parallel threshold                                   
+   - this is an adaptive plan                                                                                           
+   - 1 Sql Plan Directive used for this statement                                                                       
+
+
+Statistics
+----------------------------------------------------------                                                              
+         16  recursive calls                                                                                            
+          0  db block gets                                                                                              
+       9546  consistent gets                                                                                            
+          0  physical reads                                                                                             
+          0  redo size                                                                                                  
+       1906  bytes sent via SQL*Net to client                                                                           
+        533  bytes received via SQL*Net from client                                                                     
+          5  SQL*Net roundtrips to/from client                                                                          
+          1  sorts (memory)                                                                                             
+          0  sorts (disk)                                                                                               
+         46  rows processed                                                                                             
+

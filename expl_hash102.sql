@@ -1,4 +1,5 @@
-set linesize 190
+set linesize 160
+set trimspool on
 set feedb off
 set ver off
 set timing off
@@ -22,6 +23,7 @@ column chld               format 99
 column datatype           format A15
 column bind_variable      format A15
 column bind_value         format A20
+column bind_vals          format A60 trunc
 
 
 column operation   format A35
@@ -73,6 +75,7 @@ select
 , 'User          : ' ||  u.username            as explout
 , 'sql_id =      : ' || sql_id                 as explout
 , 'child_number  : ' || child_number           as explout
+, 'plan_hash     : ' || plan_hash_value        as explout
 , 'Executions    : ' || a.executions           as explout   
 , 'Rows processed: ' || rows_processed         as explout
 , 'Buffer_gets   : ' || a.buffer_gets          as explout
@@ -89,7 +92,7 @@ and a.sql_id = '&1'
 order by sql_id, child_number
 /
 
--- added sql-freq + history
+-- added sql-freq + history from dba_hist_%
 
 column time       format A13
 column execs      format 99999
@@ -98,7 +101,7 @@ column sec_px     format 9999
 column get_px     format 9,999,999
 column g_pr       format 999
 column nr_rows    format 9,999,999
-column pln_hv     format A8
+column pln_hv     format A10
 
 set pagesize 50
 set heading on
@@ -110,7 +113,7 @@ select to_char ( sn.end_interval_time , 'DDMON HH24:MI') /* || to_char ( sn.inst
 , round ( buffer_gets_delta  / ( decode ( executions_delta,     0, 1, executions_delta     )          ), 2 )   as get_px -- (1000 * 1000 )
 , rows_processed_delta nr_rows
 , round ( buffer_gets_delta  / ( decode ( rows_processed_delta, 0, 1, rows_processed_delta )          ) , 2)      g_pr -- , elapsed_time_delta ela
-, substr ( sq.plan_hash_value, 1, 6 ) || '..' as pln_hv
+, to_char ( sq.plan_hash_value )  as pln_hv
 --, substr ( sx.sql_text, 1, 20) sqltxt
 --, sq.* 
 from dba_hist_sqlstat  sq 
@@ -122,15 +125,44 @@ where sn.snap_id = sq.snap_id
   and sq.sql_id = '&1'
   and sq.sql_id = sx.sql_id
   and sq.dbid = sx.dbid
-  --and sq.executions_delta > 0 
+    and sq.executions_delta > 0 
 order by sn.snap_id, sn.instance_number ; 
 
 -- added sql-freq + history
 
 
+/**** 
+-- one-off for pcs only: fetch old data from sqh-tables..
+select to_char ( sn.end_interval_time , 'DDMON HH24:MI') 
+-- || to_char ( sn.instance_number, '9')  
+  as Time
+, sq.executions_delta     execs
+, sq.buffer_gets_delta    buff_gets
+, round ( elapsed_time_delta / ( decode ( executions_delta,     0, 1, executions_delta     ) * 1000000), 2 )   as sec_px -- (1000 * 1000 )
+, round ( buffer_gets_delta  / ( decode ( executions_delta,     0, 1, executions_delta     )          ), 2 )   as get_px -- (1000 * 1000 )
+, rows_processed_delta nr_rows
+, round ( buffer_gets_delta  / ( decode ( rows_processed_delta, 0, 1, rows_processed_delta )          ) , 2)      g_pr -- , elapsed_time_delta ela
+, substr ( sq.plan_hash_value, 1, 6 ) || '..' as pln_hv
+--, substr ( sx.sql_text, 1, 20) sqltxt
+--, sq.* 
+from sqh_sqlstat  sq 
+   , sqh_snapshot sn
+   , sqh_sqltext  sx
+where sn.snap_id = sq.snap_id
+  and sn.dbid = sq.dbid
+  and sn.instance_number = sq.instance_number 
+  and sq.sql_id = '&1'
+  and sq.sql_id = sx.sql_id
+  and sq.dbid = sx.dbid
+  --and sq.executions_delta > 0 
+order by sn.snap_id, sn.instance_number ; 
+
+*****/
+
 set head off
 
 -- sqltxt from sh-pool memory
+
 select  t.sql_text
 from v$sqltext t
 where sql_id = '&1'
@@ -139,7 +171,31 @@ order by piece
 
 set head on
 
--- try picking bind-vars from memory:
+-- try picking bind-vars from memory, only cursors 0+1
+
+select  --bvc.sql_id
+  bvc.child_number     chld
+--, bvc.name             bind_variable
+--, bvc.datatype_string  datatype
+--, bvc.value_string     bind_value
+--bvc.*
+--ANYDATA.AccessTimestamp(bvc.value_anydata)
+-- ANYDATA.Accessdate(bvc.value_anydata)
+, ' ' ||  lpad( replace ( bvc.name, ':', ':b' ), 5) ||  ' := '
+  || decode ( substr ( bvc.datatype_string, 1, 3)
+            ,  'NUM' , nvl ( bvc.value_string, '''''' )
+            ,  'VAR' , '''' || bvc.value_string || ''''
+            ,  'DAT' , '      to_date ( ' || '''' || ANYDATA.Accessdate(bvc.value_anydata) || ''', ''YYYY-MM-DD HH24:MI:SS'' ) '
+            ,  'TIM' , ' to_timestamp ( ' || '''' || ANYDATA.AccessTimestamp(bvc.value_anydata) || ''', ''YYYY-MM-DD HH24:MI:SS'' ) '
+            ,  bvc.value_string
+            ) || '  ;'   as bind_vals
+from v$sql_bind_capture bvc
+where 1=1
+and child_number < 2
+and sql_id = '9dz4twussxjg7'
+order by child_number, name ;
+
+/****** old stuff ****
 
 select -- bvc.sql_id,
   bvc.child_number     chld
@@ -152,8 +208,14 @@ where 1=1
 and sql_id = '&1'
 order by child_number, name;
 
+**** */
 
 -- explain from shared-pool
+
+set linesize 190
+set trimspool on
+
+/** skip this, dbms_xplan is more readable ***
 
 select
   cost
@@ -168,11 +230,24 @@ from v$sql_plan v where sql_id = '&1' --'18979282' --'15494617'
 order by hash_value, child_number, address, id 
 /
 
+**** skipped now ****/
 
--- explained from AWR
+prompt '--------- plans from memory -- '
+
+-- explain from memory if available
+
+SELECT plan_table_output FROM table(DBMS_XPLAN.DISPLAY_CURSOR('&1'));
+
+-- explained from AWR, whatever is available
+
+prompt '--------- plans from awr -- '
 
 select plan_table_output from table (dbms_xplan.display_awr('&1'));
 
+prompt . 
+prompt . output in :
+prompt ed sql_&1..lst
+prompt .
 spool off
 
 

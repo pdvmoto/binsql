@@ -1,5 +1,5 @@
 
-set linesize 120
+set linesize 150
 set feedb off 
 set ver off
 set timing off
@@ -12,6 +12,7 @@ column disk_reads format 99,999,999
 column execs      format  9,999,999
 column per_exe    format 99,999,999.99
 column hash_value format 99999999999
+column plan_hash_value format 99999999999
 column chld       format 9999 
 
 column numrows    format 99,999,999
@@ -45,28 +46,33 @@ select u.username
 , a.buffer_gets/(decode ( executions, 0, 1, executions )) as per_exe
 , first_load_time
 , rows_processed     numrows
-, hash_value, child_number chld
+, plan_hash_value, child_number chld
 --, a.cpu_time/(1000000) as cpu_sec, a.elapsed_time/(1000000) as ela_sec
 --, to_char ( ( sysdate - to_date ( a.first_load_time, 'YYYY-MM-DD/HH24:MI:SS' )  ) * 24 * 3600 / a.executions, '99,999.99' ) as every_x_sec
 --, a.* 
 from v$sql a
 , dba_users u
 where u.user_id = a.parsing_user_id
-and a.hash_value = '&1'
+-- and a.hash_value = '&1'
+and a.sql_id = '&1'
 order by hash_value, child_number
 /
 
 set head off
 
+/**** not needed anymore ... 
+
 -- sqltxt from sh-pool memory 
 select  t.sql_text
 from v$sqltext t 
-where hash_value = '&1'
+--where hash_value = '&1'
+where sql_id = '&1'
 order by piece 
 /
 
 select sql_text from v$sql 
-where hash_value = '&1'
+--where hash_value = '&1'
+where sql_id = '&1'
 /
 
 
@@ -83,10 +89,14 @@ select
 --, v.access_predicates as acc_pred, v.filter_predicates as fltr_pred
 --, v.* 
 from v$sql_plan v
-where hash_value= '&1' --'18979282' --'15494617' 
+--where hash_value= '&1' --'18979282' --'15494617' 
+where sql_id = '&1' --'18979282' --'15494617' 
 order by hash_value, child_number, address, id
 /
 
+...  ******/
 
+-- use dbms_exlan
+SELECT plan_table_output FROM table(DBMS_XPLAN.DISPLAY_CURSOR('&1'));
 
 

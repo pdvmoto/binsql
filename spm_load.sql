@@ -1,4 +1,8 @@
 
+-- usage: SQL> @spm_load sql_id plan_hash_val
+
+-- notes: the sql_id and plan_hash can be picked from explain-plan.
+
 -- load plans for given SQL_id,
 -- fix => 'YES' should fix the plan 
 --  question : test fixing correct plan straight away.

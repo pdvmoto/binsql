@@ -1,0 +1,117 @@
+table with constraint + implict index
+SQL > 
+SQL > drop   table tab_with_con;
+
+Table dropped.
+
+SQL > create table tab_with_con as
+  2  select OWNER, TABLE_NAME, TABLESPACE_NAME
+  3  	  , IOT_TYPE, IOT_NAME, NUM_ROWS, AVG_ROW_LEN
+  4  	  , LAST_ANALYZED, STATUS
+  5  from all_tables ;
+
+Table created.
+
+SQL > 
+SQL > alter table tab_with_con add constraint tab_with_con_PK primary key ( OWNER, TABLE_NAME ) ;
+
+Table altered.
+
+SQL > 
+SQL > set echo off
+.
+We have a table with PK,
+and inserting double will generate an error...
+.
+press enter to continue...
+SQL > 
+SQL > insert into tab_with_con
+  2  select OWNER, TABLE_NAME, TABLESPACE_NAME
+  3  	  , IOT_TYPE, IOT_NAME, NUM_ROWS, AVG_ROW_LEN
+  4  	  , LAST_ANALYZED, STATUS
+  5  from all_tables ;
+insert into tab_with_con
+*
+ERROR at line 1:
+ORA-00001: unique constraint (PDEVISSER.TAB_WITH_CON_PK) violated 
+
+
+SQL > 
+SQL > set echo off
+.
+Checked: Constraint is Enforced.
+Now let's drop the constraint, but we keep the index...
+.
+press enter to continue...
+SQL > 
+SQL > alter table tab_with_con drop constraint tab_with_con_pk KEEP INDEX ;
+
+Table altered.
+
+SQL > 
+SQL > set echo off
+.
+Constraint is Dropped, Check: is PK still working ... ?
+.
+press enter to continue...
+SQL > 
+SQL > insert into tab_with_con
+  2  select OWNER, TABLE_NAME, TABLESPACE_NAME
+  3  	  , IOT_TYPE, IOT_NAME, NUM_ROWS, AVG_ROW_LEN
+  4  	  , LAST_ANALYZED, STATUS
+  5  from all_tables ;
+insert into tab_with_con
+*
+ERROR at line 1:
+ORA-00001: unique constraint (PDEVISSER.TAB_WITH_CON_PK) violated 
+
+
+SQL > 
+SQL > set echo off
+.
+Check!
+Now, create a "fat index" , and use it to re-create Constraint.
+.
+press enter to continue...
+SQL > 
+SQL > create index tab_with_con_pk_fat on tab_with_con ( OWNER, TABLE_NAME, STATUS );
+
+Index created.
+
+SQL > 
+SQL > alter  table tab_with_con add constraint tab_with_con_pk primary key ( OWNER, TABLE_NAME ) using index tab_with_con_pk_fat ;
+
+Table altered.
+
+SQL > 
+SQL > set echo off
+.
+Fat index created, constraint added, PK always enforced.
+Let's drop the original index, and check PK still works?
+.
+press enter to continue...
+SQL > 
+SQL > drop index tab_with_con_pk ;
+
+Index dropped.
+
+SQL > 
+SQL > insert into tab_with_con
+  2  select OWNER, TABLE_NAME, TABLESPACE_NAME
+  3  	  , IOT_TYPE, IOT_NAME, NUM_ROWS, AVG_ROW_LEN
+  4  	  , LAST_ANALYZED, STATUS
+  5  from all_tables ;
+insert into tab_with_con
+*
+ERROR at line 1:
+ORA-00001: unique constraint (PDEVISSER.TAB_WITH_CON_PK) violated 
+
+
+SQL > 
+SQL > set echo off
+.
+QED: Constraint is Enforced.
+.
+End of demo.
+.
+press enter to continue...

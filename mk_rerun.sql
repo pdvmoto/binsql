@@ -60,16 +60,34 @@ prompt /* --                                                          */
 prompt /* -- Paste formatted statement here, followed by semicolon... */
 prompt /* --                                                          */
 prompt /* --   SQL goes HERE, with semicolon added!                   */ 
-promp  /* --                                                          */
+promp  /* --   Will include explain to catch stmnt.                   */
+prompt /* --                                                          */
 prompt /* -- use this file to run stmnt with variables defined above  */
 prompt /* -- SQL> @rerun_&1..lst                                      */
 prompt /* --                                                          */
 
+
+-- first execute goes here, can use output from xplan to get SQL
+SELECT plan_table_output FROM table(DBMS_XPLAN.DISPLAY_CURSOR('&1', 0, 'BASIC' ));
+
+
 -- and repeat with autotrace on
+
+prompt 
+prompt  
 prompt set autotrace on
+prompt set timing on
+prompt set linesize 150 
+prompt set feedback on
+prompt 
+prompt "-- 2nd run with autotrace on"
 
-prompt '/'
+prompt /
  
-spool off
+prompt /* --                                                          */
+prompt /* -- use this file to run stmnt with variables defined above  */
+prompt /* -- SQL> @rerun_&1..lst                                      */
+prompt /* --                                                          */
 
+spool off
 set feedb on

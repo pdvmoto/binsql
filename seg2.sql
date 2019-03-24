@@ -7,13 +7,13 @@ result will be storage used by the user(s) for given segments.
 */
 
 column table_name    format A20 trunc
-column index_name    format A20 trunc
-column num_rows      format 99,999,999
-column blocks        format 999,999   
-column empty_blocks  format 9,999    head empblck
-column avg_space     format 9,999    head avgspc
-column chain_cnt     format 9,999    head chncnt
-column avg_rowlen    format 9,999    head avgrow
+column index_name    format A30 trunc
+column num_rows      format 9,999,999,999
+column blocks        format    99,999,999   
+column empty_blocks  format 9,999    head emblck
+column avg_space     format 999      head spc
+column chain_cnt     format 999      head chai
+column avg_row_len   format 999      head rlen
 column compression   format A4 trunc head comp
 
 column index_type    format A4 trunc head type
@@ -21,14 +21,17 @@ column uniqueness    format A3 trunc head unq
 column blevel        format 99       head bl
 column distinct_keys format 999,999,999 head dist_keys
 
-column segment_name     format A20 trunc
+column segment_name     format A30 trunc
 column segment_type     format A1  trunc head t
 column partition_name   format A15 trunc
 column bytes         format 99,999,999 
 column kbytes        format 99,999,999 
+column mb            format 999,999.9
 column extents	     format 9,999    head xtnds
 
+set head on
 set verify off
+set autotrace off
 
 /*
 Wishlist:
@@ -78,11 +81,13 @@ order by segment_name, partition_name
 select -- s.owner, 
   s.table_name  -- , s.seq
 , s.segment_type, s.segment_name, s.partition_name, s.bytes/ (1024*1024)  as  mb
+, s.blocks
 from 
 (SELECT 1 as seq                         -- need this for ordering, nodisplay
     , owner, segment_name as table_name  --  owner and table for order/group
     , segment_type, segment_name
     , partition_name, bytes              -- this the actual segment_info
+    , blocks
  FROM dba_segments
  WHERE segment_type = 'TABLE'
  UNION ALL
@@ -90,6 +95,7 @@ from
       , i.owner, i.table_name
       , s.segment_type, s.segment_name
       , s.partition_name , s.bytes
+      , s.blocks
  FROM dba_indexes i, dba_segments s
  WHERE s.segment_name = i.index_name
  AND   s.owner = i.owner
@@ -99,6 +105,7 @@ from
       , l.owner, l.table_name
       , s.segment_type, s.segment_name
       , s.partition_name, s.bytes
+      , s.blocks
  FROM dba_lobs l, dba_segments s
  WHERE s.segment_name = l.segment_name
  AND   s.owner = l.owner
@@ -107,6 +114,7 @@ from
  SELECT 3.seq, l.owner, l.table_name
       , s.segment_type, s.segment_name
       , s.partition_name, s.bytes
+      , s.blocks
  FROM dba_lobs l, dba_segments s
  WHERE s.segment_name = l.index_name
  AND   s.owner = l.owner
