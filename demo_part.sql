@@ -4,12 +4,8 @@
 
 notably
  - table with pk and payload, (local) index on payload
- - generate 1M records.
- - pk = yyyymmdd<seq>, cycling sequence at, say, 100K (6 digits).
- - demo insert into table, getting slower as data grows,
- - demo insert into part-table: same speed.
+ - generate  records.
  - demo delete from large table  (time + redo)
- - demo delete from 1 partition (time + redo)
  - demo drop partition, see how fast?
 
 create sequence pt_seq start with 1 maxvalue 99999 cycle;
@@ -24,7 +20,8 @@ select * from series ;
 */
 
 
--- table with integer-key, add 10K values.
+-- table with integer-key, add 500K values, 
+-- will create 5 partitions, 2 named and 2 sys-named partitions
 -- 
 
 drop table pt ; 
@@ -37,8 +34,7 @@ create table pt
 )
 partition by range ( id )  interval ( 100000 ) 
 (   partition pt_1 values less than ( 100000 )  
-  , partition pt_2 values less than ( 200000 ) 
-  , partition pt_3 values less than ( 300000 ) ) ;
+  , partition pt_2 values less than ( 200000 ) ) ;
 
 -- beware, constraint in table-def generates global index
 create unique index pt_pk on  pt ( id ) local ; 
@@ -72,10 +68,12 @@ set timing on
 delete from pt where id < 10001 ;
 
 -- so easy to remove a parittion, any partition:
+set echo on
+
 alter table pt drop partition pt_1 ; 
 alter table pt drop partition pt_2 ; 
 
-
+set echo off
 set autotrace off
 
 column table_name format A20  
