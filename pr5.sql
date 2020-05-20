@@ -31,7 +31,7 @@ SELECT 'set sqlprompt "'
             , 'ip-172-20-2-216', ' (STC-old)'
             , 'ip-172-20-1-87',  ' (STC)'
             , 'ip-172-20-0-23',  ' (SC)'
-            , ' (-check-env-)')       
+            , ' (-chk-env-)')       
        || ' > "'
 FROM    v$database      db
 ;
