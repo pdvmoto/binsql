@@ -22,7 +22,6 @@ doc
 
 	Generate quick database overview
 	spoolfile : db_info.lst
-	(c) LogicaCMG 1998-2007
         Version 11g: 26/04/2007
 
 #

@@ -11,9 +11,9 @@ rem                        db_info_v10windows.sql
 rem                        db_info_v10lunix.sql
 rem                        db_info_v11windows.sql
 rem                        db_info_v11lunix.sql
-rem                        db_info_vo.sql        -- other => Report back to ORC.
-rem                        db_info_volunix.sql   -- other => Report back to ORC.
-rem                        db_info_vowindows.sql -- other => Report back to ORC.
+rem                        db_info_vo.sql        -- other => Report back.
+rem                        db_info_volunix.sql   -- other => Report back.
+rem                        db_info_vowindows.sql -- other => Report back.
 rem
 
 set heading off

@@ -18,3 +18,10 @@ from apex_050000.wwv_flow_sessions$ s
 order by s.username
 /
 
+select s.username  apx_usr
+, remote_addr
+, workspace_user_id
+-- , s.* 
+from apex_050100.wwv_flow_sessions$ s 
+order by s.username
+/

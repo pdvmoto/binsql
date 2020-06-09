@@ -22,7 +22,6 @@ doc
 
 	Generate quick database overview
 	spoolfile : db_info.lst
-	(c) CMG - TTI 1998 / sig-dba
         Version: 8.1.5 Date: 1/1/2000
 
 #
