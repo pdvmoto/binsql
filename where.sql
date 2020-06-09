@@ -1,4 +1,6 @@
 
+-- added git comment
+
 column database    format A10
 column instance    format A8   head curr_inst
 column created     format a21
