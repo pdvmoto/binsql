@@ -1,0 +1,121 @@
+SQL> set linesize 120
+SQL> set trimspool on
+SQL> set echo on
+SQL> set feeback on
+SP2-0158: unknown SET option "feeback"
+SQL> 
+SQL> select * from v$version;
+
+BANNER
+--------------------------------------------------------------------------------
+BANNER_FULL
+------------------------------------------------------------------------------------------------------------------------
+BANNER_LEGACY                                                                        CON_ID
+-------------------------------------------------------------------------------- ----------
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.3.0.0.0
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production                    0
+
+
+SQL> 
+SQL> show parameter inmemory
+
+NAME                                 TYPE        VALUE
+------------------------------------ ----------- ------------------------------
+inmemory_adg_enabled                 boolean     TRUE
+inmemory_automatic_level             string      OFF
+inmemory_clause_default              string
+inmemory_expressions_usage           string      ENABLE
+inmemory_force                       string      DEFAULT
+inmemory_max_populate_servers        integer     1
+inmemory_optimized_arithmetic        string      DISABLE
+inmemory_prefer_xmem_memcompress     string
+inmemory_prefer_xmem_priority        string
+inmemory_query                       string      ENABLE
+inmemory_size                        big integer 112M
+
+NAME                                 TYPE        VALUE
+------------------------------------ ----------- ------------------------------
+inmemory_trickle_repopulate_servers_ integer     1
+percent
+inmemory_virtual_columns             string      MANUAL
+inmemory_xmem_size                   big integer 0
+optimizer_inmemory_aware             boolean     TRUE
+SQL> 
+SQL> drop table t_inmem ;
+
+Table dropped.
+
+SQL> create table t_inmem as select object_name from dba_objects where rownum < 2001;
+
+Table created.
+
+SQL> 
+SQL> alter table t_inmem inmemory ;
+
+Table altered.
+
+SQL> 
+SQL> -- if needed: analyze table t_inmem calculate statistics ;
+SQL> 
+SQL> set autotrace on explain
+SQL> 
+SQL> select count (*)
+  2  from t_inmem
+  3  where object_name like 'C%';
+
+  COUNT(*)
+----------
+        78
+
+
+Execution Plan
+----------------------------------------------------------
+Plan hash value: 1177875461
+
+---------------------------------------------------------------------------------------
+| Id  | Operation                   | Name    | Rows  | Bytes | Cost (%CPU)| Time     |
+---------------------------------------------------------------------------------------
+|   0 | SELECT STATEMENT            |         |     1 |    17 |     4   (0)| 00:00:01 |
+|   1 |  SORT AGGREGATE             |         |     1 |    17 |            |          |
+|*  2 |   TABLE ACCESS INMEMORY FULL| T_INMEM |    88 |  1496 |     4   (0)| 00:00:01 |
+---------------------------------------------------------------------------------------
+
+Predicate Information (identified by operation id):
+---------------------------------------------------
+
+   2 - inmemory("OBJECT_NAME" LIKE 'C%')
+       filter("OBJECT_NAME" LIKE 'C%')
+
+SQL> 
+SQL> select /*+ no_inmemory */ count (*)
+  2  from t_inmem
+  3  where object_name like 'C%';
+
+  COUNT(*)
+----------
+        78
+
+
+Execution Plan
+----------------------------------------------------------
+Plan hash value: 1177875461
+
+------------------------------------------------------------------------------
+| Id  | Operation          | Name    | Rows  | Bytes | Cost (%CPU)| Time     |
+------------------------------------------------------------------------------
+|   0 | SELECT STATEMENT   |         |     1 |    17 |     4   (0)| 00:00:01 |
+|   1 |  SORT AGGREGATE    |         |     1 |    17 |            |          |
+|*  2 |   TABLE ACCESS FULL| T_INMEM |    88 |  1496 |     4   (0)| 00:00:01 |
+------------------------------------------------------------------------------
+
+Predicate Information (identified by operation id):
+---------------------------------------------------
+
+   2 - filter("OBJECT_NAME" LIKE 'C%')
+
+SQL> 
+SQL> set autotrace off
+SQL> 
+SQL> spool off
