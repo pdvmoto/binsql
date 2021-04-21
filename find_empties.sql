@@ -103,17 +103,26 @@ order by owner, table_name
 /
 
 
+spool chk_emnpties
+
 prompt 'List table with no records AND no known Dependencies'
+
+
 
 select e.owner, e.table_name  empty_tab
 from chk_empties e
-where e.num_rows = 0 
+where e.num_rows = 0
 and not exists ( select 'x' from dba_dependencies d
-where d.referenced_owner = e.owner 
+where d.referenced_owner = e.owner
   and d.referenced_type = 'TABLE'
   and d.referenced_name = e.table_name )
-order by e.owner, e.table_name
-/
+and owner not in ('APEX_050000', 'GG_EXTRACT_USR', 'GSMADMIN_INTERNAL', 'PIET', 'ROBERT', 'XXYSS_YSFM')
+and table_name not like 'MLOG$%'
+and table_name not like 'RUPD$%'
+order by e.owner, e.table_name;
+
+
+/***
 
 prompt 'List tables that do have dependencies'
 
@@ -129,4 +138,9 @@ from chk_empties e
 where e.num_rows = 0 
 order by e.owner, e.table_name
 /
+
+***/
+
+spool off
+
 
