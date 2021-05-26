@@ -4,18 +4,21 @@ doc
     File overview: datafiles, logfiles, controlfiles rollbacksegments.
 #
 
+column con                  format 999
 column datafile_name        format a61 wrap
 column tablespace_name      format a15
 column logfile_name         format a61 wrap
 column filesize             format a13  heading 'SIZE: Mb + Kb'
 column status               format a6 trunc
-column contents		    format a4 trunc heading TEMP
+column contents		        format a4 trunc heading TEMP
 column rollbacksegment      format a16
 column autoextensible       format a6 head AUTO|EXTEND
 
 set heading on
 set pagesize 60
 set linesize 110
+
+/* old stuff...
 select  df.file_name     datafile_name
 , lpad(trunc(df.bytes/(1024*1024)),8)
 ||lpad((df.bytes/(1024*1024) - trunc(df.bytes/(1024*1024))) * 1024,5) filesize
@@ -27,8 +30,28 @@ from cdb_data_files df
 ,    cdb_tablespaces dt
 ,    v$datafile      vd
 where df.tablespace_name = dt.tablespace_name
-and  vd.file# = df.file_id
-order by df.file_id
+and   df.con_id = dt.con_id
+and  vd.file#  = df.file_id
+and  vd.con_id = df.con_id
+order by df.con_id, df.file_id
+/
+
+***/ 
+
+-- new version
+select 
+  df.con_id con
+, ts.name tablespace_name
+, df.name datafile_name
+,  lpad(trunc(df.bytes/(1024*1024)),8) 
+||lpad((df.bytes/(1024*1024) - trunc(df.bytes/(1024*1024))) * 1024,5) filesize
+, df.status
+--, df.* 
+from v$datafile  df
+   , v$tablespace ts
+where df.ts# = ts.ts#
+  and df.con_id = ts.con_id
+order by df.con_id, ts.ts#  
 /
 
 set heading off
@@ -36,7 +59,7 @@ set feedback off
 select '                                            Total of datafiles'
 ||lpad(trunc(sum(df.bytes)/(1024*1024)),8)
 ||lpad((sum(df.bytes)/(1024*1024) - trunc(sum(df.bytes)/(1024*1024))) * 1024,5)
-from cdb_data_files df
+from v$datafile df
 /
 
 PROMPT

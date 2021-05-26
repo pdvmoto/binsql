@@ -1,3 +1,7 @@
 
-select 'this is /users/pdbbv/data/binsql' from dual ;
+select 'this is /users/pdbbv/moto/binsql' from dual ;
+
+! pwd
+
+
 
