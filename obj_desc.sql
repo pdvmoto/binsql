@@ -1,6 +1,6 @@
 
 
-prompt
+prompt .
 prompt obj_desc: adhoc description of object, partitioning, iot, lob
 prompt .
 prompt usage:
