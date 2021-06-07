@@ -6,5 +6,5 @@ todo:
  - separate directories for demos, 1 or more..
  - remove cstmr specific files to other locations.
  - remove awr..html and lst files.
- - keep up to date after github 2FA
+ - reep up to date after github 2FA
 
