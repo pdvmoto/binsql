@@ -1,5 +1,6 @@
 column instance_number format 9999 head inst
 column date_time format A15
+column  end_time format A15
 column cpu_interval format 999999
 
 column dend_snap  format A25
@@ -186,12 +187,12 @@ and s1.instance_number = s2.instance_number
 and s1.startup_time = s2.startup_time
 and s1.end_interval_time = s2.begin_interval_time
 and s1.dbid = db.dbid
-and s2.begin_interval_time > trunc ( sysdate - 17 )  -- only recent
+and s2.begin_interval_time > trunc ( sysdate - 7 )  -- only recent
 --order by s1.snap_id desc
 )
 select /*+ rule */
   '@awr12 ' || s.s1 || ' ' || s.s2                          AS dend_snap
-, to_char ( s.end_interval_time, 'DY DD HH24:MI' ) 			as date_time
+, to_char ( s.end_interval_time, 'DY DD HH24:MI' ) 			as end_time
 , round ( ss.average, 2 )                                   as nr_conn
 , round ( (cpu2.value - cpu1.value)/(1000*1000))      			as DB_CPU_SEC
 , round ( (dbt2.value - dbt1.value)/(1000*1000*60), 2) 			as db_min
