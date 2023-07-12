@@ -33,7 +33,7 @@ column fld_over        format A5  head fldov      trunc
 select 	nvl ( s.username, 'background' )  			usrnm 
 , 		i.instance_name					instance
 , 		i.host_name					hname
---,             p.inst_id 					inst	
+--,         p.inst_id 					inst	
 --, 		s.machine					machine
 ,		s.osuser					osusr
 ,		'..' || substr ( s.program, 1, 12 )		program
@@ -43,9 +43,9 @@ select 	nvl ( s.username, 'background' )  			usrnm
 --,          s.sid
 --,          s.serial#						serial
 , 	     to_char ( s.sid ) || ',' || to_char ( s.serial#)   sidser
-, 	   failover_type
-, 	   failover_method
-, 	   failed_over fld_over
+-- , 	   failover_type
+-- , 	   failover_method
+-- , 	   failed_over fld_over
 --,          'exec SYS.DBMS_SYSTEM.SET_EV( '
 --	   || to_char ( s.sid ) || ',' || to_char ( s.serial#) 
 --	   || ', 12, ''''); 'sidser
@@ -59,6 +59,8 @@ and s.sid in ( select sid from v$mystat where rownum < 2)
 order by s.username, s.osuser
 /
 
+
+/***
 
 select 
   s.inst_id                                             inst
@@ -83,3 +85,7 @@ from gv$session s
 where p.con_id (+)= s.con_id 
 group by s.inst_id, s.username, s.con_id, p.name
 /
+
+
+***/
+

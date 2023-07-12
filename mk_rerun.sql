@@ -20,9 +20,9 @@ and sql_id = '&1'
 and child_number = 0
 order by name, child_number, name;
 
-prompt
-prompt  now all varibles are declared, we will try to assign from cursor-0
-prompt
+prompt  /*  */
+prompt  /* -- now all varibles declared, will try to assign from cursor-0 */
+prompt  /*  */
 
 prompt BEGIN
 
@@ -62,12 +62,14 @@ prompt /* --                                                          */
 prompt /* --   SQL goes HERE, with semicolon added!                   */ 
 promp  /* --   Will include explain to catch stmnt.                   */
 prompt /* --                                                          */
-prompt /* -- use this file to run stmnt with variables defined above  */
-prompt /* -- SQL> @rerun_&1..lst                                      */
+prompt /* -- use this file to edit + run stmnt with variables         */
+prompt /* -- SQL> ed rerun_&1..lst                                      */
+prompt /* -- SQL> @rerun_&1..lst                                        */
 prompt /* --                                                          */
 
 
--- first execute goes here, can use output from xplan to get SQL
+prompt /*  first execute goes here, can use output from xplan to get SQL */
+prompt /*  please remove plan...                                     */
 SELECT plan_table_output FROM table(DBMS_XPLAN.DISPLAY_CURSOR('&1', 0, 'BASIC' ));
 
 
@@ -80,12 +82,16 @@ prompt set timing on
 prompt set linesize 150 
 prompt set feedback on
 prompt 
-prompt "-- 2nd run with autotrace on"
+prompt /* -- and 2nd run with autotrace on */
 
 prompt /
  
+prompt set autotrace off
+prompt set timing off
+
 prompt /* --                                                          */
-prompt /* -- use this file to run stmnt with variables defined above  */
+prompt /* -- use this file to edit and run stmnt with variables       */
+prompt /* -- SQL> ed rerun_&1..lst                                      */
 prompt /* -- SQL> @rerun_&1..lst                                      */
 prompt /* --                                                          */
 

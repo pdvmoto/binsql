@@ -12,9 +12,11 @@ notes:
 
 
 declare 
+    /* pio */
 	starttime	date ;
 	str 		varchar2(1000);
 	x 		number;
+    n_max   number := 10000000 ;
 begin
   starttime := sysdate ;
 
@@ -30,7 +32,7 @@ begin
             exit outer_for when (sysdate - starttime) > &1 / (24 * 3600);
 
             -- do some counting, but limit to N rows to avoid runaways on large tables. 
-            execute immediate 'select /*+ FULL(t) */ count(*) from '||t.owner||'.'||t.table_name||' t where rownum < 1000000' into x;
+            execute immediate 'select /*+ FULL(t) */ count(*) from '||t.owner||'.'||t.table_name||' t where rownum < :1 ' into x using n_max;
 
           exception   -- overkill, for the moment...
             when others then null;
