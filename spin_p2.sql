@@ -14,7 +14,7 @@ notes:
 declare 
 	starttime	date ;
 	str 		varchar2(1000);
-	x 		number;
+	nrows 		number;
 begin
   starttime := sysdate ;
 
@@ -22,7 +22,10 @@ begin
 
       <<outer_for>>
       for i in 1..&1 loop
-       	for t in (select owner, table_name from all_tables where (owner,table_name) not in (select owner,table_name from all_external_tables)) loop
+       	for t in (select owner, table_name from all_tables 
+                  where (owner,table_name) not in (select owner,table_name from all_external_tables)
+                  and num_rows > (1*1024*1024 )
+                  order by owner, table_name ) loop
 
           begin
 
@@ -30,7 +33,9 @@ begin
             exit outer_for when (sysdate - starttime) > &1 / (24 * 3600);
 
             -- do some counting, but limit to N rows to avoid runaways on large tables. 
-            execute immediate 'select /*+ parallel(t, 4) */ count(*) from '||t.owner||'.'||t.table_name||' t where rownum < 1000000000' into x;
+            execute immediate 'select /*+ noparallel(t) */ count(*) from '||t.owner||'.'||t.table_name||' t where rownum < 1000000000' into nrows;
+
+            dbms_output.put_line ( '..found '||t.owner||'.'||t.table_name||': ' || nrows || ';' ) ; 
 
           exception   -- overkill, for the moment...
             when others then null;
