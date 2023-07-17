@@ -5,6 +5,16 @@ rem 3 days is approx 5000 min, 2 weeks = 20K min
 rem my prefered settings for more careful monitored systems:
 exec dbms_workload_repository.modify_snapshot_settings( 10000, 10  );
 
+rem -- 00note : from PDB, the session cannot adjust settings for parent-CDB.
+begin
+ dbms_workload_repository.modify_snapshot_settings(
+    interval => 10
+  , retention => 60000
+  , dbid => 281453300   );
+end;
+/
+
+
 commit ;
 
 prompt .
