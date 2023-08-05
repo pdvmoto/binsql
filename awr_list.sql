@@ -32,7 +32,7 @@ set verify off
 --spool last_awrrpt.lst
 
 --0....,....1....,....2....,....3....,....4
-SELECT '@awr_manual_s1_s2 ' || s1.snap_id || ' ' || s2.snap_id  AS dend_snap
+SELECT '@awr12 ' || s1.snap_id || ' ' || s2.snap_id  AS dend_snap
 , '-- ' || to_char ( s2.end_interval_time, 'DY DD HH24:MI:SS' ) as endtime 
 FROM 
 dba_hist_snapshot s1, /* sys.wrm$_snapshot s1,  */
