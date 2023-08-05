@@ -4,7 +4,7 @@ doc
     File overview: datafiles, logfiles, controlfiles rollbacksegments.
 #
 
-column datafile_name        format a61 wrap
+column datafile_name        format a61 nowrap
 column tablespace_name      format a15
 column logfile_name         format a61 wrap
 column filesize             format a13  heading 'SIZE: Mb + Kb'

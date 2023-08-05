@@ -12,6 +12,7 @@ select decode (
                 , '0', '@info04_v0.sql'
                 , '1', '@info04_v0.sql'
                 , '2', '@info04_v0.sql'
+                , '3', '@info04_v0.sql'
 		, '@info01_vo.sql' ) 
 from v$version where rownum <2; 
 
