@@ -57,12 +57,12 @@ spool def_awrrpt.sql
 SELECT 
   ' define    inst_num = ' || s2.instance_number    AS dinst_num
 , ' define        dbid = ' || s2.dbid               AS ddbid
-, ' define report_name = awr_' || d.NAME || '_' 
+, ' define report_name = awr_' || d.global_name || '_' 
   || TO_CHAR (s2.end_interval_time, 'YYYYMMDD_HH24MISS') 
   || '.' || decode ( '&report_type', 'txt', 'text', 'html' )  AS dreport_name
 FROM 
 dba_hist_snapshot s2, /* sys.wrm$_snapshot s1, */
-v$database d
+global_name d
 WHERE 1=1 
   and s2.snap_id = &2 ;
 
