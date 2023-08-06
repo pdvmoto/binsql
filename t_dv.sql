@@ -67,10 +67,10 @@ p @insert @update @delete
 
 desc p_dv
 
-select json_serialize(p.data pretty) from p_dv p 
+select /* wm1 */ json_serialize(p.data pretty) from p_dv p 
 where rownum < 5;
 
-select json_serialize(p.data pretty) from p_dv p 
+select /* wm2 */ json_serialize(p.data pretty) from p_dv p 
 where p.data.c_id=13
 
 

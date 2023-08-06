@@ -5,7 +5,7 @@ set feedback off
 
 spool sqlstart
 
-SELECT 'set sqlprompt "' || user || ' @ ' ||db.name||' @ '||
+SELECT 'set sqlprompt "' || user || ' @ ' ||gn.global_name ||' @ '||
        RTRIM(SUBSTR ( p.program, INSTR ( p.program, '@' ) + 1
                         ,   INSTR ( p.program, ' ' )
                             -  INSTR ( p.program, '@' )  ) )
