@@ -1,0 +1,30 @@
+SQL> @chk_dbareg
+
+COMP_ID    MODIFIED               COMP_NAME                      STATUS         
+---------- ---------------------- ------------------------------ -----------    
+APS        11-AUG-2023 19:49:53   OLAP Analytic Workspace        VALID          
+CATALOG    11-AUG-2023 19:49:47   Oracle Database Catalog Views  VALID          
+CATJAVA    11-AUG-2023 19:49:53   Oracle Database Java Packages  VALID          
+CATPROC    11-AUG-2023 19:49:47   Oracle Database Packages and T VALID          
+                                  ypes                                          
+                                                                                
+CONTEXT    11-AUG-2023 19:49:53   Oracle Text                    VALID          
+JAVAVM     11-AUG-2023 19:49:52   JServer JAVA Virtual Machine   VALID          
+OWM        11-AUG-2023 19:49:52   Oracle Workspace Manager       VALID          
+RAC        11-AUG-2023 19:48:56   Oracle Real Application Cluste OPTION OFF     
+                                  rs                                            
+
+COMP_ID    MODIFIED               COMP_NAME                      STATUS         
+---------- ---------------------- ------------------------------ -----------    
+                                                                                
+SDO        11-AUG-2023 19:49:54   Spatial                        VALID          
+XDB        11-AUG-2023 19:49:49   Oracle XML Database            VALID          
+XML        11-AUG-2023 19:49:53   Oracle XDK                     VALID          
+XOQ        11-AUG-2023 19:49:54   Oracle OLAP API                VALID          
+
+12 rows selected.
+
+
+no rows selected
+
+SQL> spool off
