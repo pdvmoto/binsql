@@ -11,8 +11,10 @@ select comp_id
 from dba_registry
 order by comp_id ; 
 
+/*
 select * 
 from dba_registry
 where 1=0
 order by modified ; 
+*/
 
