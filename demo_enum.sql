@@ -1,29 +1,36 @@
+/* 
 
--- test: long list of roman numerals (more than 8000, >1 block
--- then select and order by enum and domain_display (rn), 
--- check explain-plan.
+demo_enum.sql: test of domain: long list of roman numerals
 
-set timing on
+notably:
+ - is it Faster (more efficient) than an LOV table with FK? 
+   Ideally, would do 1M inserts to test... ? 
+ - check explain-plans ?
+ - what if the enum (domain) is large.. ? 
+ - what is the limit of 32K on data-display clob?
+
+follow : the demo_enum2.. with error..
+
+*/ 
+
+-- set timing on
 set echo on
 
-drop domain if exists numbers_enum;
+-- drop dependent-tables
+drop table tcolors ;
+drop table tromans ;
+purge recyclebin ;
 
-create domain numbers_enum as
-enum (
-  one,
-  two,
-  three
-);
+drop domain color_enum ; 
+drop domain roman_enum ; 
 
-create domain nr_err_enum as
-enum (
-  one,
-  one,
-  three
-);
-drop domain if exists rainbow_enum ;
+prompt
+accept hit_enter prompt "dropped objects, purged ..."
 
-create domain rainbow_enum  as
+-- now re-create domains, 
+-- and one of them could be 3999 long..
+
+create domain color_enum  as
 enum (
   red,
   orange, 
@@ -34,11 +41,15 @@ enum (
   violet
 );
 
-drop domain if exists rn_enum ;
+-- now try a long domain, rn: 3999 roman numbers...
 
-accept hit_enter prompt "rn_enum dropped, now recreate..." 
+set echo off
+prompt
+accept hit_enter prompt "Next is an enum with many values..." 
+set echo on
 
-create domain rn_enum as 
+
+create domain roman_enum as 
 enum (          I
 ,              II
 ,             III
@@ -4037,32 +4048,140 @@ enum (          I
 ,       MMMCMXCVI
 ,      MMMCMXCVII
 ,     MMMCMXCVIII
+,       MMMCMXCIX
+);
+/* end of rn_enum, roman numerals enum */
+
+set echo off
+prompt 
+accept hit_enter prompt "Created an extreme case of 4000 LoVs, let's play..."
+set echo on
+
+-- clean out shared pool for better measurment per stmnt
+alter system flush shared_pool ; 
+
+set echo on
+set timing on
+
+-- first examine the domains... the big domain is notably slow on first-time queries.. 
+-- possibly parse-time
+
+select * from color_enum ;
+select * from color_enum order by 1 ; 
+select * from color_enum order by 2 ; 
+
+set echo off
+prompt
+accept hit_enter prompt "Normal (small) domain, queries..."
+set echo on
+
+select * from roman_enum ;
+
+set echo off
+prompt
+accept hit_enter prompt "Large domain takes more (cpu-)time on first select..."
+set echo on
+
+select * from roman_enum order by 1 ;
+select * from roman_enum order by 2 ;
+
+set echo off
+prompt
+accept hit_enter prompt "large domain, sluggish queries, but subsequent selects much faster..."
+set echo on
+
+set autotrace on
+/
+
+set echo off
+set autotrace off
+prompt
+accept hit_enter prompt "Explain... No buffer- or disk-access at all.. efficient? "
+
+set timing off
+@demo_enum_io
+
+set echo off
+prompt 
+accept hit_enter prompt "check the effort for queries showing the domain, potentially Very Efficient "
+prompt
+accept hit_enter prompt "end of first part of demo.. next, use the domains in tables " 
+
+
+-- testing two tables using the enums, then some inerts + selects
+
+set echo on
+
+create table tcolors (
+  id number 
+, color color_enum
 );
 
--- use domains, then test inserts
-
-
-create table colors (
-  id number primary key
-, color rainbow_enum
-);
-
-insert into colors values ( 1, 1 );
-
-select * from colors ;
-
-select domain_display ( color ) from colors ;
-
-create table roman ( 
-  id number
-, rn rn_enum not null 
+create table tromans ( 
+  id number 
+, rn roman_enum not null 
 ); 
 
-insert into roman values ( 10, 10 );
+set echo off
+prompt 
+accept hit_enter prompt "Two very simple tables using the ENUM domains..."
 
-select * from roman ; 
+alter system flush shared_pool ;
+set timing off
 
-select id, domain_display (rn) from roman ;
+set echo on
 
--- try display...
+-- insert, using both number and domain-description
+insert into tcolors values ( 1, 1 );
+insert into tcolors values ( 2, color_enum.orange );
+insert into tcolors values ( 3, 3 );
+insert into tcolors values ( 4, color_enum.green );
+
+select c.*, domain_display ( c.color ) from tcolors c ;
+
+set echo off
+prompt 
+prompt Inserts can be done using simple number or the Constant defined in the ENUM.
+prompt The data in the table is just a number.
+prompt The domain acts as a constraint and can be used to Display the value.
+prompt 
+accept hit_enter prompt "check the use of domain_display to show descr"
+set echo on
+
+insert into tromans values ( 2022, 2022 );
+insert into tromans values ( 2023, roman_enum.MMXXIII );
+insert into tromans values ( 2024, 2024 );
+insert into tromans values ( 2025, roman_enum.MMXXV );
+
+select r.* from tromans r ; 
+
+set echo off
+prompt 
+accept hit_enter prompt "Idem for the roman numbers"
+set echo on
+
+-- try dislay? error somewher above 2600 (MMDC)
+select r.*, domain_display (r.rn) from tromans r ;
+
+
+set echo off
+prompt 
+accept hit_enter prompt "But the display of this domain causes an error???"
+set echo on
+
+-- show io
+@demo_enum_io.sql 
+
+set echo off
+prompt
+accept hit_enter prompt "Note how the operations use very little IO.. Efficient!" 
+set echo on
+
+-- limit for error on display_domain () is in the clob-length of 32K ? 
+select name enum_name, DBMS_LOB.GETLENGTH( data_display ) loblenght from user_domains ;
+
+set echo off
+prompt
+accept hit_enter prompt "Next show how to avoid the display-error: Use a smaller domain.."
+set echo on
 
