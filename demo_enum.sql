@@ -3,13 +3,15 @@
 demo_enum.sql: test of domain: long list of roman numerals
 
 notably:
- - is it Faster (more efficient) than an LOV table with FK? 
-   Ideally, would do 1M inserts to test... ? 
- - check explain-plans ?
  - what if the enum (domain) is large.. ? 
  - what is the limit of 32K on data-display clob?
 
-follow : the demo_enum2.. with error..
+more todo:
+ - is it Faster (more efficient) than an LOV table with FK? 
+   Ideally, would do 1M inserts to test... ? 
+ - check explain-plans ?
+
+follow : the demo_enum_2size.sql with error..
 
 */ 
 
