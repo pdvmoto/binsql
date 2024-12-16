@@ -1,6 +1,8 @@
 
--- demo_enum_io.sql: show the activity of the enum-queries...
+-- demo_enum_io2.sql: show the activity of the enum-queries...(edited from original)
 -- helper file...
+
+set sqlformat default
 
 column sql_id       format A15
 column exec         format 999 
@@ -8,7 +10,7 @@ column cpu_mcrsec   format 99,999,999
 column ela_mcrsec   format 99,999,999 
 column buff_gets    format 99,999
 column physrds      format 99,999
-column sql_text     format A60 trunc
+column sql_text     format A60 wrap
 
 column enum_name    format A15
 column loblength    format 99,999,999 
@@ -24,9 +26,9 @@ set echo on
 select s.sql_id 
 , s.executions exec
 , s.cpu_time                cpu_mcrsec
-, s.elapsed_time            ela_mcrsec
+--, s.elapsed_time            ela_mcrsec
 , s.buffer_gets             buff_gets
-, s.physical_read_requests  physrds
+--, s.physical_read_requests  physrds
 , s.sql_text
 --, s.* 
 from v$sql  s
