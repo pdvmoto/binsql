@@ -2,6 +2,8 @@
 -- demo_enum_io.sql: show the activity of the enum-queries...
 -- helper file...
 
+set echo off
+
 column sql_id       format A15
 column exec         format 999 
 column cpu_mcrsec   format 99,999,999 
@@ -17,6 +19,7 @@ set linesize 130
 set pagesize 100
 
 set autotrace off
+
 set echo on
 
 -- show cpu and buffer gets..
