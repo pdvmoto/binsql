@@ -7,6 +7,9 @@
   todo:
     - check between versions 23.5 and 23.6
     - check notably the describe and the info-results: does it show number?
+    - add difference in desc from sqlplus ? 
+    - recommend SQLcl...
+    - 
 
   docu on domain_display: 
 https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/domain_display.html
@@ -18,7 +21,7 @@ https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/domain_displ
 --alias showplan=select * from table(dbms_xplan.display_cursor());
   alias showplan=select * from table(dbms_xplan.display_cursor('',null,'BASIC'));
 
-column id         format 99999
+column id         format 999999
 column color_disp format A20
 column roman_disp format A20
 
@@ -26,6 +29,8 @@ set doc on
 set linesize 120
 set timing off
 set doc on
+
+drop index if exists data_enum_fbi_roman ; 
 
 set echo on
 
@@ -82,14 +87,19 @@ set echo on
 
 select * from data_enum d
 where d.color_id = color_enum.Yellow 
-  and rownum < 8
+  and rownum < 4
 ;
 
 set echo off
 set autotrace off
 prompt 
-prompt "using domain-values as constants, basic plan."
-accept hitenter prompt "Also check the stats ..."
+prompt "Using domain-values as constants, basic plan."
+prompt "Note that the system knows for Yellow => ID=3"
+prompt
+prompt "And then it also filters the limits 1 and 7, "
+prompt "Is that bcse the color_id must fall inside the valid range ? "
+prompt 
+accept hitenter prompt "Next, Also check the stats ..."
 
 set autotrace on stat
 set echo on
@@ -116,7 +126,7 @@ select d.id, d.color_id, d.roman_id
 , domain_display ( d.roman_id ) as roman_disp 
 from data_enum d
 where d.color_id = color_enum.yeLLow
-  and rownum < 8
+  and rownum < 4
 -- order by d.id -- use order-by to get some diversity
 ;
 
@@ -175,7 +185,9 @@ where domain_display ( d.roman_id ) = 'XLII'
 
 set echo off
 prompt 
-prompt "This was more or less predictable, it is Function."
+prompt "This was more or less predictable, it is a Function."
+prompt "But also note how the domain-display works. CASE-stmnt"
+prompt
 accept hit_enter prompt "..."
 set autotrace on stat
 
@@ -187,7 +199,7 @@ set autotrace off
 prompt
 prompt "Check the statistics, clearly no index used."
 prompt 
-accept hit_enter propmpt "Would and F B I  help ? ..."
+accept hit_enter prompt "Would and F B I  help ? ..."
 set echo on
 
 create index data_enum_fbi_roman on data_enum ( domain_display ( roman_id ) ) ;
@@ -202,7 +214,6 @@ set autotrace on explain
 
 set echo on
 
-
 select d.*, domain_display ( d.roman_id ) 
 from data_enum d
 where domain_display ( d.roman_id ) = 'XLII'
@@ -213,10 +224,42 @@ set echo off
 prompt 
 prompt "Yep, a function, and can be indexed."
 accept hit_enter prompt "..."
+
 set autotrace on stat
+set echo on
+
+l
+/
+
+set echo off
+set autotrace off
+prompt 
+prompt "and with the FBI, the plan is Efficient again."
+prompt 
+pause "That concludes the where-clause demo for the moment..."
+
+set doc on
+
+prompt 
+prompt "I'd like to point out several things: "
+prompt 
+prompt "- The values in the domain-column are numeric, in this (default-)case!"
+prompt "- The enum_value can be used as a Constant in your code."
+prompt "- Display of the descriptive values needs call to domain_display ()."
+prompt "- Domain_display () behaves like any other funcitons in where-clauses."
+prompt "- The display-function seems to use a CASE-stmnt."
+prompt 
+prompt "Also note: I do not categorically advise to use an FBI on enum-columns."
+prompt 
+
+#
+
+set doc off
 
 
 -- 
 -- 
+set echo off
+
 accept hit_enter prompt "-- -- -- -- -- end of script ..."
 
