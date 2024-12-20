@@ -1,8 +1,8 @@
-
+=
 /* 
   file.sql: -- test some where clauses on enums
 
-  requirements: demo_enum.sql and demo_enum_4select.sql to prepare objects.
+  requirements: demo_enum.sql prepare objects.
 
   todo:
     - make the Case visable ! need autotrace on explain instead of display
@@ -30,6 +30,19 @@ set timing off
 
 drop table if exists tcolors ; 
 drop index if exists data_enum_fbi_roman ; 
+
+-- re-create, keep script self-contained.
+create domain color_enum  as
+enum (
+  red,
+  orange,
+  yellow,
+  green,
+  blue,
+  indigo,
+  violet
+);
+
 
 set echo on
 
@@ -222,9 +235,7 @@ set echo on
 --
 pause hit_enter_to_continue
 
--------------------------------------------------------
-prompt "--------- below is old ----- "
-pause abc
+prompt "--------- end of script  ----- "
 
 quit 
 
