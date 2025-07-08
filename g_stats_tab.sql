@@ -19,7 +19,7 @@ begin
   dbms_stats.gather_table_stats (
     ownname          => '&1'
   , tabname          => '&2' 
-  , estimate_percent => 1		         -- null=compute
+  , estimate_percent => null		         -- null=compute
   , block_sample     => false                    -- false=slow, better
   , method_opt       => 'FOR ALL INDEXED COLUMNS SIZE 1 ' -- all/auto = slow, complete
                                                  -- seems to yield avglen=100 .... ??

@@ -1,2 +1,4 @@
 
-set sqlprompt "SYSTEM @ XE @ vckvmora04 (-check-env-) > "                       
+set sqlprompt "SCOTT @ FREEPDB1  > "                                                                                       
+
+host title "SCOTT @ FREEPDB1  > "                                                                                          

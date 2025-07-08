@@ -9,7 +9,7 @@ rem -- 00note : from PDB, the session cannot adjust settings for parent-CDB.
 begin
  dbms_workload_repository.modify_snapshot_settings(
     interval => 10
-  , retention => 60000
+  , retention => 10000
   , dbid => 281453300   );
 end;
 /

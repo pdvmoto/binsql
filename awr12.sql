@@ -80,6 +80,7 @@ set heading off
 set linesize 8000 
 set trimspool on
 
+set termout off
 
 -- set spoolfile..
 spool &report_name
@@ -91,3 +92,10 @@ select output from table(dbms_workload_repository.&fn_name( &dbid,
                                                             &rpt_options ));
 
 spool off
+
+set termout on
+
+prompt file spooled and  opening automatically
+
+! open &report_name
+
