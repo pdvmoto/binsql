@@ -13,12 +13,12 @@ create or replace function spinf ( n_sec_run number )
 AS
         dt_starttime    date ;
         i_counter       number ( 9,0) := 0;
-        n_sec           number ( 9,0);
+        n_sec           number ;
         n_per_sec       number ;
 BEGIN
 
     n_sec := n_sec_run ;
-    dbms_output.put_line ( 'spin (oracle, block): spinning for ' || n_sec || ' sec');
+    -- dbms_output.put_line ( 'spinf: spinning for ' || n_sec || ' sec');
 
     dt_starttime := sysdate ;
 
@@ -31,9 +31,9 @@ BEGIN
     END LOOP ;
 
     n_per_sec := i_counter / n_sec ;
-    dbms_output.put_line ( 'spin (oracle, block): seconds ' || to_char (n_sec)
-           || ' exec: ' || to_char ( i_counter, '999,999,999.9')
-           || ' exec/sec: ' || to_char ( n_per_sec , '999,999.999' ) || '.' );
+    dbms_output.put_line ( 'spinf: ' || to_char (n_sec) || ' sec, '
+           || to_char ( i_counter, '999,999,999.9') || ' loops, '
+           || to_char ( n_per_sec , '999,999.999' ) || ' loops/sec.' );
 
    -- when function: return ;
   return n_per_sec ; 
@@ -53,12 +53,11 @@ AS
         -- epoch precision, unit is still Seconds...
         now_ep          number ;
         end_ep          number ; 
-        i_counter       number := 0;
+        i_counter       number ( 9,0) := 0;
         n_per_sec       number ;
 BEGIN
 
-    -- dbms_output.put_line ( 'spinf_n (oracle, block): spinning for ' 
-    --     || to_char ( n_sec_run , '9999999999.999999999' ) || ' sec' ) ;
+    -- dbms_output.put_line ( 'spinf_n: spinning for ' || n_sec || ' sec');
 
     now_ep :=   to_number ( '0' ) 
                 + to_number ( 
@@ -66,6 +65,11 @@ BEGIN
                       (trunc ( sysdate ) - TO_date('1970-01-01', 'YYYY-MM-DD')) * 86400
                             ) )
                 + to_number ( to_char (      systimestamp, 'SSSSS.FF9' ) )  ;
+
+    now_ep := to_number ( 
+                (trunc ( sysdate ) - TO_date('1970-01-01', 'YYYY-MM-DD')) * 86400
+                        )
+              + to_number ( to_char ( systimestamp, 'SSSSS.FF9' ) ) ;
 
     end_ep := now_ep + n_sec_run ; 
 
@@ -90,9 +94,9 @@ BEGIN
 
     n_per_sec := i_counter / n_sec_run ;
 
-    dbms_output.put_line ( 'spinf_n: seconds ' || to_char (n_sec_run)
-           || ' exec: ' || to_char ( i_counter, '999,999,999.9')
-           || ' exec/sec: ' || to_char ( n_per_sec , '999,999.999' ) || '.' );
+    dbms_output.put_line ( 'spinf_n: ' || to_char (n_sec_run) || ' sec, '
+           || to_char ( i_counter, '999,999,999.9') || ' loops, '
+           || to_char ( n_per_sec , '999,999.999' ) || ' loops/sec.' );
 
    -- when function: return ;
   return n_per_sec ; 
@@ -103,9 +107,9 @@ show errors
 
 set timin on
 
-select spinf ( 1 ) from dual ; 
-select spinf ( 2 ) from dual ; 
-select spinf_n ( 0.0005 ) from dual ; 
-select spinf_n ( 0.5 ) from dual ; 
-select spinf_n ( 2.5 ) from dual ; 
+select spinf ( 1 )        loops_p_sec from dual ; 
+select spinf ( 3 )        loops_p_sec from dual ; 
+select spinf_n ( 0.0005 ) loops_p_sec from dual ; 
+select spinf_n ( 0.5 )    loops_p_sec from dual ; 
+select spinf_n ( 2.5 )    loops_p_sec from dual ; 
 

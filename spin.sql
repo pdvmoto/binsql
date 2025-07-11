@@ -8,15 +8,18 @@ doc
 
 #
 
+-- set serveroutput on 
+
 DECLARE 
+/* spin */ 
 	dt_starttime	date ;
         i_counter       number ( 9,0) := 0;
         n_sec           number ( 9,0); 
-        n_persec 	number ;
+        n_persec 	      number ;
 BEGIN
 
-    n_sec := &1 ;
-    dbms_output.put_line ( 'spin (oracle, block): spinning for ' || n_sec || ' sec'); 
+    n_sec := &1  ;
+    dbms_output.put_line ( 'spin (pl/sql block): spinning for ' || n_sec || ' sec'); 
 
     dt_starttime := sysdate ;
 
@@ -29,9 +32,9 @@ BEGIN
     END LOOP ;
 
     n_persec := i_counter / n_sec ;
-    dbms_output.put_line ( 'spin (oracle, block): seconds ' || to_char (n_sec)
+    dbms_output.put_line ( 'spin (pl/sql block):' 
            || ' exec: ' || to_char ( i_counter, '999,999,999.9')
-           || ' exec/sec: ' || to_char ( n_persec , '999,999.999' ) || '.' );  
+           || ' loops/sec: ' || to_char ( n_persec , '999,999.999' ) || '.' );  
 
    -- when function: return ;
 END ;
