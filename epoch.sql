@@ -44,8 +44,6 @@ SELECT
   + to_number ( to_char ( systimestamp, 'SSSSS.FF9' ) ) as epoch_nano
 FROM dual;
 
-prompt ' '
-prompt ' '
 
 set echo on
 
@@ -59,6 +57,4 @@ select
 as epoch_nano 
 from dual;
 
-prompt ' ' 
-prompt ' ' 
 
