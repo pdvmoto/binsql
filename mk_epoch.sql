@@ -28,7 +28,9 @@ show errors
 
 column the_epoch format 9999999999.999999999
 
-select f_epoch from dual ;
+select f_epoch the_epoch from dual ;
+
+select level, f_epoch from dual connect by level < 15 ; 
 
 with cnts as ( 
 select object_type, count(*) type_cnt  from all_objects group by object_type 

@@ -100,7 +100,8 @@ BEGIN
   
   -- dbms_output.put_line ( 'sleepf: sleeping for ' || n_sec || ' sec');
 
-  sys.dbms_session.sleep ( n_sec ) ; 
+  --sys.dbms_session.sleep ( n_sec ) ; 
+  sys.dbms_lock.sleep ( n_sec ) ;
 
   return n_sec ;  -- return value arg1
 
