@@ -1,4 +1,3 @@
-ERROR:
-ORA-03114: not connected to ORACLE 
 
-
+set sqlprompt "SCOTT @ FREEPDB1 @ a12bbf5d24ad > "                                                                                          
+Elapsed: 00:00:00.10

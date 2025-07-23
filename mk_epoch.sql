@@ -26,11 +26,130 @@ end;
 /
 show errors
 
+-- faster function ? 
+CREATE OR REPLACE FUNCTION f_epoch2
+RETURN NUMBER
+IS
+  -- the_epoch  number ;
+begin
+  return (
+    ( to_number ( trunc ( sysdate) - TO_date( '1970-01-01', 'YYYY-MM-DD')) * 86400) -- seconds up to sysddate
+  + to_number ( to_char ( systimestamp, 'SSSSS.FF9' ) )                            -- add today seconds + fraction
+  ) ;
+end;
+/
+show errors
+
+-- faster function ? 
+CREATE OR REPLACE FUNCTION f_epoch2a
+RETURN NUMBER
+IS
+  -- the_epoch  number ;
+begin
+  return (
+    ( to_number ( trunc ( systimestamp) - TO_date( '1970-01-01', 'YYYY-MM-DD')) * 86400) -- seconds up to sysddate
+  + to_number ( to_char ( systimestamp, 'SSSSS.FF9' ) )                            -- add today seconds + fraction
+  ) ;
+end;
+/
+show errors
+
+-- faster function ? 
+CREATE OR REPLACE FUNCTION f_epoch3
+RETURN NUMBER
+IS
+  PRAGMA UDF ;
+begin
+  return (
+    ( to_number ( trunc ( sysdate) - TO_date( '1970-01-01', 'YYYY-MM-DD')) * 86400) -- seconds up to sysddate
+  + to_number ( to_char ( systimestamp, 'SSSSS.FF9' ) )                            -- add today seconds + fraction
+  ) ;
+end;
+/
+show errors
+
+-- faster function ? (pragma with 2x tmstmp)
+CREATE OR REPLACE FUNCTION f_epoch3a
+RETURN NUMBER
+IS
+  PRAGMA UDF ;
+begin
+  -- now_stm := systimestamp ; 
+  return (
+    ( to_number ( trunc ( systimestamp) - TO_date( '1970-01-01', 'YYYY-MM-DD')) * 86400) -- seconds up to sysddate
+  + to_number ( to_char ( systimestamp, 'SSSSS.FF9' ) )                            -- add today seconds + fraction
+  ) ;
+end;
+/
+show errors
+
+-- faster function ? (pragma with 1x2 stmp)
+CREATE OR REPLACE FUNCTION f_epoch3b
+RETURN NUMBER
+IS
+  PRAGMA UDF ;
+  now_stm  timestamp := systimestamp;
+begin
+  -- now_stm := systimestamp ; 
+  return (
+    ( to_number ( trunc ( now_stm) - TO_date( '1970-01-01', 'YYYY-MM-DD')) * 86400) -- seconds up to sysddate
+  + to_number ( to_char ( now_stm, 'SSSSS.FF9' ) )                            -- add today seconds + fraction
+  ) ;
+end;
+/
+show errors
+
+-- even faster function ? (pragma with dt= + ts=)
+CREATE OR REPLACE FUNCTION f_epoch3c
+RETURN NUMBER
+IS
+  PRAGMA UDF ;
+  now_stm  timestamp := systimestamp ;
+  now_dat  date      := sysdate      ; 
+begin
+  -- now_stm := systimestamp ; 
+  return (
+    ( to_number ( trunc ( now_dat) - TO_date( '1970-01-01', 'YYYY-MM-DD')) * 86400) -- seconds up to sysddate
+  + to_number ( to_char ( now_stm, 'SSSSS.FF9' ) )                            -- add today seconds + fraction
+  ) ;
+end;
+/
+show errors
+
+
+-- macro..
+CREATE or replace FUNCTION m_epoch
+RETURN varchar2 
+SQL_MACRO(SCALAR) IS
+BEGIN
+  RETURN ( q'[ 
+      ( to_number ( trunc ( sysdate) - TO_date( '1970-01-01', 'YYYY-MM-DD')) * 86400) -- seconds up to sysddate
+    +   to_number ( to_char ( systimestamp, 'SSSSS.FF9' ) ) ]' 
+  );
+END;
+/
+show errors
+
 column the_epoch format 9999999999.999999999
+column the_mepoch format 9999999999.999999999
 
-select f_epoch the_epoch from dual ;
+select f_epoch the_epoch , 'as nr' from dual ;
 
-select level, f_epoch from dual connect by level < 15 ; 
+select m_epoch the_mepoch , 'as macro' from dual ;
+
+select 'Four diff Functions:', f_epoch2, f_epoch2a, f_epoch3, f_epoch3a from dual ; 
+
+select level, f_epoch the_epoch, m_epoch the_mepoch from dual connect by level < 11 ; 
+
+-- check impact of arraysize..
+set arraysize 6
+
+select level
+, f_epoch
+, f_epoch
+, m_epoch
+, m_epoch
+from dual connect by level < 10 ;
 
 with cnts as ( 
 select object_type, count(*) type_cnt  from all_objects group by object_type 
@@ -38,6 +157,7 @@ select object_type, count(*) type_cnt  from all_objects group by object_type
 select object_type
 , type_cnt 
 , f_epoch the_epoch
+, m_epoch the_mepoch
 from cnts 
 /
 
