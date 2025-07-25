@@ -1,9 +1,11 @@
 
--- sql macro to get epoch ? 
+-- mk_epoch.sql: sql function or macro to get epoch ? 
 -- 
 -- note: a function would be back-portable.. 
+--
 
-
+-- this has no decimal-seconds, e.g. precision is 1 sec, no more.
+-- and doesnt work anymore
 CREATE OR REPLACE FUNCTION f_epoch_old
 RETURN NUMBER
 IS
@@ -13,24 +15,45 @@ end;
 /
 show errors
 
+-- Final Function, winner of the tests
 CREATE OR REPLACE FUNCTION f_epoch
 RETURN NUMBER
 IS
-  the_epoch  number ;
+  PRAGMA UDF ;
+  now_stm  timestamp := systimestamp;
 begin
-  the_epoch := 
-    ( to_number ( trunc ( sysdate) - TO_date( '1970-01-01', 'YYYY-MM-DD')) * 86400) -- seconds up to sysddate
-  + to_number ( to_char ( systimestamp, 'SSSSS.FF9' ) ) ;                           -- add today seconds + fraction
+  return (
+    ( to_number ( trunc ( now_stm) - TO_date( '1970-01-01', 'YYYY-MM-DD')) * 86400) -- seconds up to sysddate
+  + to_number ( to_char ( now_stm, 'SSSSS.FF9' ) )                            -- add today seconds + fraction
+  ) ;
+end;
+/
+show errors
+
+
+
+CREATE OR REPLACE FUNCTION f_epoch1
+RETURN NUMBER
+IS
+  midnight_sec  number ;
+  in_day_sec    number ;
+  the_epoch     number ;
+begin
+
+  midnight_sec := ( to_number ( trunc ( sysdate) - TO_date( '1970-01-01', 'YYYY-MM-DD')) * 86400) ;
+  in_day_sec   := to_number ( to_char ( systimestamp, 'SSSSS.FF9' ) ) ; 
+
+  the_epoch := midnight_sec + in_day_sec ; 
+
   return the_epoch ;
 end;
 /
 show errors
 
--- faster function ? 
+-- faster function, less code? 
 CREATE OR REPLACE FUNCTION f_epoch2
 RETURN NUMBER
 IS
-  -- the_epoch  number ;
 begin
   return (
     ( to_number ( trunc ( sysdate) - TO_date( '1970-01-01', 'YYYY-MM-DD')) * 86400) -- seconds up to sysddate
@@ -40,11 +63,10 @@ end;
 /
 show errors
 
--- faster function ? 
+-- faster function ? this was consistently WORSE.. 
 CREATE OR REPLACE FUNCTION f_epoch2a
 RETURN NUMBER
 IS
-  -- the_epoch  number ;
 begin
   return (
     ( to_number ( trunc ( systimestamp) - TO_date( '1970-01-01', 'YYYY-MM-DD')) * 86400) -- seconds up to sysddate
@@ -54,7 +76,7 @@ end;
 /
 show errors
 
--- faster function ? 
+-- faster function ? PRAGMA UDF 
 CREATE OR REPLACE FUNCTION f_epoch3
 RETURN NUMBER
 IS
@@ -74,7 +96,6 @@ RETURN NUMBER
 IS
   PRAGMA UDF ;
 begin
-  -- now_stm := systimestamp ; 
   return (
     ( to_number ( trunc ( systimestamp) - TO_date( '1970-01-01', 'YYYY-MM-DD')) * 86400) -- seconds up to sysddate
   + to_number ( to_char ( systimestamp, 'SSSSS.FF9' ) )                            -- add today seconds + fraction
@@ -90,7 +111,6 @@ IS
   PRAGMA UDF ;
   now_stm  timestamp := systimestamp;
 begin
-  -- now_stm := systimestamp ; 
   return (
     ( to_number ( trunc ( now_stm) - TO_date( '1970-01-01', 'YYYY-MM-DD')) * 86400) -- seconds up to sysddate
   + to_number ( to_char ( now_stm, 'SSSSS.FF9' ) )                            -- add today seconds + fraction
@@ -133,6 +153,8 @@ show errors
 column the_epoch format 9999999999.999999999
 column the_mepoch format 9999999999.999999999
 
+column f_epoch1 format 9999999999.999999999
+
 select f_epoch the_epoch , 'as nr' from dual ;
 
 select m_epoch the_mepoch , 'as macro' from dual ;
@@ -160,4 +182,17 @@ select object_type
 , m_epoch the_mepoch
 from cnts 
 /
+
+
+-- testing code here..
+
+column f_epoch1 format 9999999999.999999999
+
+set echo on
+
+select f_epoch1 from dual ;
+
+select f_epoch1, f_epoch1 from dual connect by level < 4 ;
+
+set echo off
 

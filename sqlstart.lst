@@ -1,3 +1,60 @@
+SQL> 
+SQL> SELECT 'set sqlprompt "'
+  2  	    || to_char ( sys_context ( 'USERENV', 'SID' ) ) ||'-'
+  3  	    || user
+  4  	    || decode ( user
+  5  		, sys_context('userenv','current_schema') , ''
+  6  		, ' ['|| sys_context('userenv','current_schema') || ']'
+  7  	       )
+  8  	    --|| '-' || to_char ( sys_context ( 'USERENV', 'SID' ) )
+  9  	    || ' @ ' ||db.name
+ 10  	    || ' @ '|| SYS_CONTEXT('USERENV','SERVER_HOST')
+ 11  	    || decode  (SYS_CONTEXT('USERENV','SERVER_HOST')
+ 12  		 , 'alp-dbs00004',    ' (PROD)'
+ 13  		 , 'ip-172-20-2-131', ' (KT)'
+ 14  		 , 'ip-172-20-0-99' , ' (TEMP)'
+ 15  		 , 'ip-172-20-0-194' , ' (TEMP)'
+ 16  		 , 'ala-dbs00004',     ' (ACC)'
+ 17  		 , 'ip-172-20-0-205', ' (ACC)'
+ 18  		 , 'ip-172-20-2-216', ' (STC-old)'
+ 19  		 , 'ip-172-20-1-87',  ' (STC)'
+ 20  		 , 'ald-dbs00016',    ' (Dev-19)'
+ 21  		 , '23cc8839a3ff',    ' (23.5)'
+ 22  		 , 'a12bbf5d24ad',    ' (v23.8)'
+ 23  		 , ' (-chk-env-)')
+ 24  	    || ' > "'
+ 25  FROM    v$database      db
+ 26  ;
 
-set sqlprompt "SCOTT @ FREEPDB1 @ a12bbf5d24ad > "                                                                                          
-Elapsed: 00:00:00.10
+set sqlprompt "38-SCOTT @ FREE @ 23cc8839a3ff (23.5) > "                        
+SQL> 
+SQL> SELECT 'host title "'
+  2  	    || to_char ( sys_context ( 'USERENV', 'SID' ) ) ||'-'
+  3  	    || user
+  4  	    || decode ( user
+  5  		, sys_context('userenv','current_schema') , ''
+  6  		, ' ['|| sys_context('userenv','current_schema') || ']'
+  7  	       )
+  8  	    --|| '-' || to_char ( sys_context ( 'USERENV', 'SID' ) )
+  9  	    || ' @ ' ||db.name
+ 10  	    || ' @ '|| SYS_CONTEXT('USERENV','SERVER_HOST')
+ 11  	    || decode  (SYS_CONTEXT('USERENV','SERVER_HOST')
+ 12  		 , 'alp-dbs00004',    ' (PROD)'
+ 13  		 , 'ip-172-20-2-131', ' (KT)'
+ 14  		 , 'ip-172-20-0-99' , ' (TEMP)'
+ 15  		 , 'ip-172-20-0-194' , ' (TEMP)'
+ 16  		 , 'ala-dbs00004',     ' (ACC)'
+ 17  		 , 'ip-172-20-0-205', ' (ACC)'
+ 18  		 , 'ip-172-20-2-216', ' (STC-old)'
+ 19  		 , 'ip-172-20-1-87',  ' (STC)'
+ 20  		 , 'ald-dbs00016',    ' (Dev-19)'
+ 21  		 , 'alt-dbs00016',    ' (Tst19)'
+ 22  		 , ' (-chk-env-)')
+ 23  	    || ' > "'
+ 24  FROM    v$database      db
+ 25  ;
+
+host title "38-SCOTT @ FREE @ 23cc8839a3ff (-chk-env-) > "                      
+SQL> 
+SQL> 
+SQL> spool off

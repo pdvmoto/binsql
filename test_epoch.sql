@@ -131,3 +131,19 @@ select /* t6 macro */
 , m_epoch 
 from dual connect by level < 1001 ;
 
+
+doc 
+-- find exec times..
+ select sqa.executions as exes
+ , sqa.cpu_time
+ , round ( sqa.cpu_time / sqa.executions ) as cpu_px
+ , sqa.elapsed_time 
+ , round ( sqa.elapsed_time / sqa.executions ) as ela_px 
+ , substr ( sqa.sql_text, 1, 40 ) as sql_text
+ --  , sqa.* 
+ from v$sqlarea sqa 
+ where sql_text like '%/* t%' 
+ and sql_text not like '%executions%'
+ order by sqa.cpu_time ;
+ 
+#

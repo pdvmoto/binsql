@@ -27,7 +27,8 @@ SELECT 'set sqlprompt "'
             , 'ip-172-20-2-216', ' (STC-old)'
             , 'ip-172-20-1-87',  ' (STC)'
             , 'ald-dbs00016',    ' (Dev-19)'
-            , 'alt-dbs00016',    ' (Tst-19)'
+            , '23cc8839a3ff',    ' (23.5)'
+            , 'a12bbf5d24ad',    ' (v23.8)'
             , ' (-chk-env-)')       
        || ' > "'
 FROM    v$database      db
