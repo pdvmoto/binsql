@@ -48,6 +48,22 @@ END;
 /
 show errors
 
+-- And the Function, copied from earlier work in mk_epoch.sql
+CREATE OR REPLACE FUNCTION f_epoch
+RETURN NUMBER
+IS
+  PRAGMA UDF ;
+  now_stm  timestamp := systimestamp;
+begin
+  return (
+    ( to_number ( trunc ( now_stm) - TO_date( '1970-01-01', 'YYYY-MM-DD')) * 86400) -- seconds up to sysddate
+  + to_number ( to_char ( now_stm, 'SSSSS.FF9' ) )                            -- add today seconds + fraction
+  ) ;
+end;
+/
+show errors
+
+
 column f_epoch    format 9999999999.999999
 column m_epoch1   format 9999999999.999999
 column m_epoch2   format 9999999999.999999
