@@ -13,21 +13,21 @@ from v$mystat   st
 where st.statistic# = sn.statistic# 
 and (  sn.name like '%roundtrips%client%'
     or sn.name like '%execute count%'
-    or sn.name like '%arse count (hard%'
-    or sn.name like 'user calls'
+    --or sn.name like '%arse count (hard%'
+    --or sn.name like 'user calls'
     or sn.name like 'DB time'
     )
 union all 
-select ' ~ ', null
+select ' ~ ', null from dual
 union all 
 select ' ' || stm.stat_name || ' (micro-sec)' 
      , stm.value
 from v$sess_time_model  stm
 where stm.sid =  sys_context('userenv', 'sid')
   and (  stm.stat_name like 'DB time'
-      or stm.stat_name like 'DB CPU'
-      or stm.stat_name like 'sql execu%'
-      or stm.stat_name like 'PL/SQL execu%'
+      --or stm.stat_name like 'DB CPU'
+      --or stm.stat_name like 'sql execu%'
+      --or stm.stat_name like 'PL/SQL execu%'
       )
 --order by 1
 /

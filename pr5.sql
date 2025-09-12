@@ -16,7 +16,7 @@ SELECT 'set sqlprompt "'
           )
        --|| '-' || to_char ( sys_context ( 'USERENV', 'SID' ) )
        || ' @ ' ||db.name
-       || ' @ '|| SYS_CONTEXT('USERENV','SERVER_HOST')       
+       -- || ' @ '|| SYS_CONTEXT('USERENV','SERVER_HOST')       
        || decode  (SYS_CONTEXT('USERENV','SERVER_HOST') 
             , 'alp-dbs00004',    ' (PROD)'
             , 'ip-172-20-2-131', ' (KT)'
@@ -29,6 +29,7 @@ SELECT 'set sqlprompt "'
             , 'ald-dbs00016',    ' (Dev-19)'
             , '23cc8839a3ff',    ' (23.5)'
             , 'a12bbf5d24ad',    ' (v23.8)'
+            , '38e0a176051e',    ' (v23.9)'
             , ' (-chk-env-)')       
        || ' > "'
 FROM    v$database      db

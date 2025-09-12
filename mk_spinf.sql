@@ -79,7 +79,11 @@ BEGIN
 
     END LOOP ;
 
-    n_per_sec := i_counter / n_sec ;
+    IF n_sec = 0.0 THEN
+      n_per_sec := 0.0 ;
+    ELSE
+      n_per_sec := i_counter / n_sec ;
+    END IF ;
 
     dbms_output.put_line ( 'spinf_n: ' || to_char (n_sec) || ' sec, '
            || to_char ( i_counter, '999,999,999.9') || ' loops, '
@@ -90,6 +94,20 @@ BEGIN
 END;
 /
 show errors
+
+-- wrap a function that returns the n_sec, it is a less confusing number
+create or replace function spinf_s ( n_sec number ) 
+  return number
+AS
+  n_retval number := 0 ;
+begin
+  select spinf_n ( n_sec )  into n_retval from dual ;
+  return  n_sec ;
+END ;
+/
+show errors
+l
+
 
         
 create or replace function sleepf ( n_sec number )
@@ -121,16 +139,18 @@ select spinf ( 0.05 )        loops_p_sec from dual ;
 select spinf ( 1.05 )        loops_p_sec from dual ; 
 select spinf ( 3 )           loops_p_sec from dual ; 
 
-select spinf ( 1 )    loops_p_sec from dual ; 
-select spinf ( 1.1 )  loops_p_sec from dual ; 
-select spinf ( 2 )    loops_p_sec from dual ; 
-select spinf ( 2.1 )  loops_p_sec from dual ; 
+-- select spinf ( 1 )    loops_p_sec from dual ; 
+-- select spinf ( 1.1 )  loops_p_sec from dual ; 
+-- select spinf ( 2 )    loops_p_sec from dual ; 
+-- select spinf ( 2.1 )  loops_p_sec from dual ; 
 
 select spinf_n ( 0.0005 ) loops_p_sec from dual ; 
 select spinf_n ( 0.05 )    loops_p_sec from dual ; 
 select spinf_n ( 1.05 )    loops_p_sec from dual ; 
 select spinf_n ( 3.06 )    loops_p_sec from dual ; 
 
+select spinf_s ( 0.0 ) from dual;
+select spinf_s ( 3.14 ) from dual;
 
 set feedb on
 set echo off
