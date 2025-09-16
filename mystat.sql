@@ -63,21 +63,56 @@ set linesize 120
 column  key format 99999999999
 column  start_tm format A10
 column  sql_id   format A13
-column  sql_txt  format A20
+column  sql_txt  format A100
 column  ela_us format 99999999
 column  cpu_us format 99999999
 column  buff_g format 999999
 
 select 
--- h.key
-  to_char ( h.sql_exec_start, 'HH24:MI:SS' ) as start_tm
+  h.key
+, to_char ( h.sql_exec_start, 'HH24:MI:SS' ) as start_tm
 , sql_id
 , h.elapsed_time ela_us, h.cpu_time cpu_us, h.buffer_gets buff_g
 , sql_id
-, replace ( substr ( h.sql_text, 1, 18 ), chr(10), '' ) sql_txt
+, replace ( substr ( h.sql_text, 1, 98 ), chr(10), '' ) sql_txt
 --, h.con_id
 --, h.* 
 from v$sql_history h 
-order by h.key ;
+where 1=0
+and h.sql_id not in ( '38d0yqrm0yb2z' ) 
+order by h.sql_exec_start nulls first, h.key ;
 
+--drop table xx_sql_hist ;
+create table xx_sql_hist as 
+select h.key, h.sql_id, h.sql_text
+, h.elapsed_time, h.cpu_time, h.buffer_gets
+, h.plan_hash_value
+, h.sql_exec_start, h.last_active_time
+, h.session_user#, h.current_user#
+, h.statement_type
+, h.sid, h.session_serial#
+, h.con_id
+from v$sql_history h 
+where 1=0 ;
+
+set feedb on
+set echo on
+insert into xx_sql_hist 
+select h.key, h.sql_id, h.sql_text
+, h.elapsed_time, h.cpu_time, h.buffer_gets
+, h.plan_hash_value
+, h.sql_exec_start, h.last_active_time
+, h.session_user#, h.current_user#
+, h.statement_type
+, h.sid, h.session_serial#
+, h.con_id
+from v$sql_history h 
+where 1=1
+-- prevent doubles, in case stmnt is run multiple times..
+and h.key not in (select distinct key from xx_sql_hist )
+;
+
+commit ; 
+
+set echo off
 
