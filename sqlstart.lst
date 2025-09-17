@@ -1,4 +1,4 @@
 
-set sqlprompt "SCOTT @ ORCLPDB1  > "                                            
+set sqlprompt "SCOTT @ FREEPDB1  > "                                                                                          
 
-host title "SCOTT @ ORCLPDB1  > "                                               
+host title "SCOTT @ FREEPDB1  > "                                                                                             

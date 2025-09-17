@@ -26,9 +26,9 @@ select ' ' || stm.stat_name || ' (micro-sec)'
 from v$sess_time_model  stm
 where stm.sid =  sys_context('userenv', 'sid')
   and (  stm.stat_name like 'DB time'
-      --or stm.stat_name like 'DB CPU'
-      --or stm.stat_name like 'sql execu%'
-      --or stm.stat_name like 'PL/SQL execu%'
+      or stm.stat_name like 'DB CPU'
+      or stm.stat_name like 'sql execu%'
+      or stm.stat_name like 'PL/SQL execu%'
       )
 --order by 1
 /
@@ -57,6 +57,7 @@ where s.sid = mysid.sid
 ***/
 
 
+/*** 
 -- experiment with sql_history
 
 set linesize 120
@@ -113,6 +114,8 @@ and h.key not in (select distinct key from xx_sql_hist )
 ;
 
 commit ; 
+
+***/
 
 set echo off
 
