@@ -1,0 +1,94 @@
+SQL> 
+SQL> select /* d42: version */ banner_full from v$version ;
+
+BANNER_FULL                                                                                                             
+------------------------------------------------------------------------------------------------------------------------
+Oracle Database 23ai Free Release 23.0.0.0.0 - Develop, Learn, and Run for Free                                         
+Version 23.9.0.25.07                                                                                                    
+                                                                                                                        
+
+Elapsed: 00:00:00.01
+SQL> 
+SQL> select /* d42: cpu     */ sum (ln(rownum)) from dual connect by level < 1e6;
+
+SUM(LN(ROWNUM))                                                                                                         
+---------------                                                                                                         
+     12815504.6                                                                                                         
+
+Elapsed: 00:00:12.30
+SQL> 
+SQL> select /* d42: cnt     */ count (*) from all_source where text like '%x%y%z%'  ;
+
+  COUNT(*)                                                                                                              
+----------                                                                                                              
+      1856                                                                                                              
+
+Elapsed: 00:00:00.70
+SQL> 
+SQL> exec   /* d42: lock    */	  dbms_lock.sleep (  9.8 ) ;
+
+PL/SQL procedure successfully completed.
+
+Elapsed: 00:00:09.81
+SQL> 
+SQL> exec   /* d42: sess    */ dbms_session.sleep ( 10.2 ) ;
+
+PL/SQL procedure successfully completed.
+
+Elapsed: 00:00:10.26
+SQL> 
+SQL> set echo off
+.
+"Show session-data from V$SQL_HISTORY, and verify from V$SQLAREA... "
+.
+SQL> 
+SQL> select h.sql_id
+  2  	  , count (*)						   as nr_exe
+  3  	  , sum (h.elapsed_time)				   as ela_us
+  4  	  , sum (h.cpu_time)					   as cpu_us
+  5  	  , replace ( substr ( h.sql_text, 1, 60 ), chr(10), ' ' ) as sql_txt
+  6  from v$sql_history  h
+  7  where h.sid = SYS_CONTEXT ('USERENV', 'SID')     -- only from this SID
+  8  group by h.sql_id, h.sql_text
+  9  order by 3;
+
+SQL_ID        NR_EXE      ELA_US      CPU_US SQL_TXT                                                                    
+------------- ------ ----------- ----------- --------------------------------------------------------------             
+6u5zqzz2nm55c      1          16          16 SELECT DECODE(USER, 'XS$NULL',  XS_SYS_CONTEXT('XS$SESSION',               
+17dj3r7gsrbv0      1          19          19 select /* d42: version */ banner_full from v$version                       
+7rn4z7hduh25g      1         276         775 BEGIN /* d42: sess    */ dbms_session.sleep ( 10.2 ) ; END;                
+4t7wcy6jbzzhx      1         359         829 BEGIN /* d42: lock    */    dbms_lock.sleep (  9.8 ) ; END;                
+g4y6nw3tts7cc      1         533         533 BEGIN DBMS_APPLICATION_INFO.SET_MODULE(:1,NULL); END;                      
+25pcvutfcvusz      1     613,571     613,015 select /* d42: cnt     */ count (*) from all_source where te               
+af72btbx92y3a      1  12,296,019  12,280,496 select /* d42: cpu     */ sum (ln(rownum)) from dual connect               
+
+7 rows selected.
+
+Elapsed: 00:00:00.02
+SQL> 
+SQL> select s.sql_id
+  2  , s.executions			       as nr_exe
+  3  , s.elapsed_time			       as ela_us
+  4  , s.cpu_time			       as cpu_us
+  5  --, s.elapsed_time / s.executions		 as us_p_exe
+  6  , substr ( s.sql_text, 1, 60 )	       as sql_txt
+  7  from v$sqlarea  s
+  8  where s.sql_text like '%/* d42:%'		     -- only watermarked stmnts
+  9  order by s.elapsed_time;
+
+SQL_ID        NR_EXE      ELA_US      CPU_US SQL_TXT                                                                    
+------------- ------ ----------- ----------- --------------------------------------------------------------             
+4t7wcy6jbzzhx      2       7,332       8,450 BEGIN /* d42: lock    */    dbms_lock.sleep (  9.8 ) ; END;                
+17dj3r7gsrbv0      2      14,942      14,987 select /* d42: version */ banner_full from v$version                       
+7rn4z7hduh25g      2      24,979      25,847 BEGIN /* d42: sess    */ dbms_session.sleep ( 10.2 ) ; END;                
+gn82m9jgyf6u1      7     258,114     256,430 select s.sql_id , s.executions                            as               
+25pcvutfcvusz      2   1,477,903   1,477,717 select /* d42: cnt     */ count (*) from all_source where te               
+af72btbx92y3a      2  24,625,779  24,578,328 select /* d42: cpu     */ sum (ln(rownum)) from dual connect               
+
+6 rows selected.
+
+Elapsed: 00:00:00.06
+SQL> 
+SQL> set echo off
+SQL> 
+SQL> exit
