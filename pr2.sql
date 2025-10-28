@@ -4,7 +4,7 @@ set feedback off
 
 spool sqlstart
 
-SELECT 'set sqlprompt "' || user || ' @ ' ||global_name||' '
+SELECT 'set sqlprompt "' || SYS_CONTEXT ('USERENV', 'SID') || '-'|| user || ' @ ' ||global_name||' '
        || ' > "'
 FROM        global_name     gn
 /

@@ -79,12 +79,16 @@ column ela_us  format 99,999,999
 column cpu_us  format 99,999,999
 column sql_txt format A52
 
+column sid format 99999
+column module format A30
+column nr_hist  format 999999 
+
 set echo on
 
-select h.sql_id 
-     , count (*) nr_exe
+select count (*) nr_exe
      , sum (h.elapsed_time) ela_us 
      , sum (h.cpu_time) cpu_us 
+     , h.sql_id
      , replace ( substr ( h.sql_text, 1, 50 ), chr(10), '|' ) sql_txt
 from v$sql_history  h
 where h.sid = SYS_CONTEXT ('USERENV', 'SID')
@@ -92,4 +96,19 @@ group by h.sql_id, h.sql_text
 order by 3;
 
 set echo off
+
+column  sid format 9999 
+
+select s.sid, s.module module, count (*) nr_hist
+-- , h.* 
+from v$sql_history  h
+, v$session s 
+where s.sid = h.sid 
+group by s.sid, s.module 
+order by s.sid;
+
+
+select 'total_hist' as sql_id, count (*) nr_exe
+from v$sql_history h
+group by 'total_hist'; 
 

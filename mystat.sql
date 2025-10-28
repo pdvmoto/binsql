@@ -13,10 +13,13 @@ from v$mystat   st
 where st.statistic# = sn.statistic# 
 and (  sn.name like '%roundtrips%client%'
     or sn.name like '%execute count%'
-    --or sn.name like '%arse count (hard%'
-    --or sn.name like 'user calls'
+    or sn.name like '%arse count (hard%'
+    or sn.name like 'user calls'
     or sn.name like 'redo size'
     or sn.name like 'DB time'
+    or sn.name like 'consistent gets'
+    or sn.name like 'db block gets'
+    or sn.name like '%pga%'
     )
 union all 
 select ' ~ ', null from dual
