@@ -54,3 +54,56 @@ END;
 /
 
 show errors
+
+
+-- now for some formatting... 8-4-4-4-12
+
+CREATE OR REPLACE FUNCTION fmt_uuid ( the_uuid RAW )
+RETURN VARCHAR2
+IS
+  vc_retval varchar2(64) := '';
+begin
+
+  IF the_uuid IS NULL THEN
+    vc_retval := '00000000-000-0000-0000-000000000000';
+
+  ELSE  
+
+    vc_retval :=  substr ( the_uuid,  1, 8 ) 
+        || '-' || substr ( the_uuid,  9, 4 )
+        || '-' || substr ( the_uuid, 13, 4 )
+        || '-' || substr ( the_uuid, 17, 4 )
+        || '-' || substr ( the_uuid, 20 )  ;
+      
+  End if;
+  
+  return vc_retval ;
+  
+END; -- fmt_uuid (raw)
+/
+
+show errors
+
+-- demo the function..
+select uuid7 from dual connect by level < 6;
+select raw_to_uuid ( uuid7 ) as with_hyphens from dual connect by level < 6;
+
+-- demo the format..
+select  fmt_uuid ( null )         as fmt_null from dual ;
+select  fmt_uuid ( sys_guid()  )  as fmt_sys_guid from dual ;
+select  fmt_uuid ( uuid()  )      as fmt_uuid4  from dual ;
+select  fmt_uuid ( uuid7()  )     as fmt_uuid7  from dual ;
+
+
+set linesize 80
+column id        format A32
+column fmt_uuid  format A37
+column vsiz      format 9999 
+
+-- check the format for v7 ???
+with v7 as ( select uuid7() as id from dual )
+select id, fmt_uuid ( id ) fmt_uuid, vsize ( id )  vsiz from v7 ;
+
+with v4 as ( select uuid() as id from dual )
+select id, fmt_uuid ( id ) fmt_uuid, vsize ( id )  vsiz from v4 ;
+
