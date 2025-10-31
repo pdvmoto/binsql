@@ -2,6 +2,7 @@
 -- mk_epoch.sql: sql function or macro to get epoch ? 
 -- 
 -- note: a function would be back-portable.. 
+-- note: macro is "atomic" in statemewnt, function is per line, per call..
 --
 
 -- this has no decimal-seconds, e.g. precision is 1 sec, no more.

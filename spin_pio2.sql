@@ -10,29 +10,21 @@ notes:
 
 -- select to_char ( sysdate, 'HH24:MI:SS' ) from dual;
 
-set serveroutput on
-set timin on
 
 declare 
     /* pio */
 	starttime	date ;
 	str 		varchar2(1000);
 	x 		number;
-  n_loops number ;
-  n_max   number := 10000000 ;
+    n_max   number := 10000000 ;
 begin
-  n_loops := 0 ;
   starttime := sysdate ;
 
     while (sysdate - starttime) < &1 / (24 * 3600) loop
 
       <<outer_for>>
       for i in 1..&1 loop
-       	for t in (select owner, table_name from all_tables 
-                    where (owner,table_name) not in (select owner,table_name from all_external_tables)
-                  UNION ALL
-                  select owner, view_name from all_views
-          ) loop
+       	for t in (select owner, table_name from all_tables where (owner,table_name) not in (select owner,table_name from all_external_tables)) loop
 
           begin
 
@@ -42,8 +34,6 @@ begin
             -- do some counting, but limit to N rows to avoid runaways on large tables. 
             execute immediate 'select /*+ FULL(t) */ count(*) from '||t.owner||'.'||t.table_name||' t where rownum < :1 ' into x using n_max;
 
-            n_loops := n_loops + 1 ; 
-
           exception   -- overkill, for the moment...
             when others then null;
           end;
@@ -52,9 +42,6 @@ begin
       end loop; -- i, named as "outer_for"
 
     end loop; -- while
-
-    dbms_output.put_line ( ' ')  ;
-    dbms_output.put_line ( 'spin_pio ' || to_char ( n_loops ) || ' executes done. ' ) ;
 
 end ;
 /
