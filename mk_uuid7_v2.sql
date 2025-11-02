@@ -1,4 +1,7 @@
 /* 
+  mk_uuid7_v2.sql: continuation.. experiments...
+
+original: (run this first..)
   mk_uuid7.sql: Playing with UUID-V7, Tweaks derived from blog by jasmin F.
 
   first version, fixed for length of last 12.
@@ -14,9 +17,12 @@ todo:
      if any given date: use that for uuid-v7
      the null-uuuid has to be done elsewhere, or with separate paremeter.. ? 
 
+adding functions:
+
 Questions..
  - Q1 : how important is the variant-byte ? 
  - Q2 : would "overloaded function" be more elegant -> yes.
+ 
 
 
 example uuid7:

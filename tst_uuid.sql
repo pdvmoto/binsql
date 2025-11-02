@@ -2,9 +2,11 @@
 -- tst_uuid.sql: compare uuid v4 and v7.
 
 -- a few test_cases..
+/*
 drop table ts;
 drop table t4;
 drop table t7;
+*/
 
 create table ts as select sys_guid() as id from dual ; 
 create table t4 as select uuid()     as id from dual ; 
@@ -30,7 +32,7 @@ select raw_to_uuid ( id ) from t7 ;
 
 -- first the uuid v4, then v7, and also sys_guid
 
-drop   table tst_uuids ; 
+-- drop   table tst_uuids ; 
 
 create table tst_uuids ( 
   id            raw (16)
@@ -42,7 +44,7 @@ create table tst_uuids (
 
 alter table tst_uuids add constraint tst_uuids_pk primary key ( id ) ;
 
-drop   table tst_uuid4 ; 
+-- drop   table tst_uuid4 ; 
 
 create table tst_uuid4 ( 
   id            raw (16)
@@ -55,7 +57,7 @@ create table tst_uuid4 (
 alter table tst_uuid4 add constraint tst_uuid4_pk primary key ( id ) ;
 
 
-drop table tst_uuid7 ;
+--drop table tst_uuid7 ;
 
 create table tst_uuid7 ( 
   id            raw (16)
@@ -77,7 +79,7 @@ with uuid_data as (
      , f_epoch            as ts_epoch
      , ' '                as id_vc
      , 'payld'            as payload
-  from dual connect by level < 1000 )
+  from dual connect by level < 100 )
 select id, created_dt, ts_epoch, id_vc, payload from uuid_data;
 
 commit ; 
@@ -89,7 +91,7 @@ with uuid_data as (
      , f_epoch            as ts_epoch
      , ' '                as id_vc
      , 'payld'            as payload
-  from dual connect by level < 1000 )
+  from dual connect by level < 100 )
 select id, created_dt, ts_epoch, id_vc, payload from uuid_data;
 
 commit ; 
@@ -101,7 +103,7 @@ with uuid_data as (
      , f_epoch            as ts_epoch
      , ' '                as id_vc
      , 'payld'            as payload
-  from dual connect by level < 10000 )
+  from dual connect by level < 100 )
 select id, created_dt, ts_epoch, id_vc, payload from uuid_data;
 
 commit ; 
