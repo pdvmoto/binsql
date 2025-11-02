@@ -1,4 +1,4 @@
-/* 
+/**** /* 
   mk_uuid7_v2.sql: continuation.. experiments...
 
 original: (run this first..)
@@ -7,8 +7,10 @@ original: (run this first..)
   first version, fixed for length of last 12.
   2nd version: more compliant?, thx Jasmin !
   3rd version: uuuid7_ts: with option for given timestamp (note the wrong Variat)
+  v2: more functions, possibly package: version, to_vc, and uuid_epoch, -ts, -date
 
 todo:
+ - 48-bit timestamp seems to miss the millisec ?? 
  - uuid7 with given date.. for use in partitioning or range-queries
      Use Package and synony to Overload, and stick with 1 single name ? 
      Maybe just rename _ts 
@@ -16,6 +18,7 @@ todo:
  - if in_ts = null => get ramdom Uuid-v7 based on sysdate, 
      if any given date: use that for uuid-v7
      the null-uuuid has to be done elsewhere, or with separate paremeter.. ? 
+ - in fmt_uuid: catch invalid UUIDs - raise error ? 
 
 adding functions:
 
@@ -38,219 +41,230 @@ formatted, spacing out bits, bytes..
 
 */
 
-CREATE OR REPLACE FUNCTION uuid7_ts ( in_ts TIMESTAMP default NULL )
-RETURN RAW
+
+CREATE OR REPLACE FUNCTION uuid_get_version ( in_uuid RAW default null )
+RETURN number
+-- extract the version number.. simple..
 --
--- use the given TS to construct a UUID-V7, 
--- bonus: report timestamp in last bits (but not conform-Standard...)
+-- retval:  
+-- NULL -> NULL
+-- invalid length: -1
+-- invalid content: -2 (what would constitute... ? for exmaple, non-hex values? )
+-- min '00000000-0000-0000 ... : -255 (or some low value..., )
+-- max:'ffffffff-ffff-ffff...  :  255 (or some high value..)
 --
--- on NULL, return uuid-v7 using current SYSTIMESTAMP
+-- Queestions: 
+--  - should we RAISE errors ? 
+--  - how to check for SYS_GUID ?
 -- 
--- question: should the NULL contain a V7 indicator 
---    answer: no, but that is strictly no UUID-V7 anymore.
---
--- question: should we fill with random bytes or just 00s
---    answer: 00s at this point, it makes the value "Fixed" ???
---
--- Credits: Build on an example from Jasmin Fluri, Oct 2025.
---
 IS
-  vc_ts      VARCHAR2(32)   := to_char ( in_ts, 'YYYYMMDDHH24MISSFF' ) ;
+  n_retval     number ;   -- define as Integer ??
+  vc_version   varchar2(1) ; 
 
-  -- chop out the comopnents..
-  vc_yr      VARCHAR2(4)    := substr ( vc_ts,   1, 4 ) ;
-  vc_mmdd    VARCHAR2(4)    := substr ( vc_ts,   5, 4 ) ;
-  vc_tim_ms  VARCHAR2(9)    := substr ( vc_ts, -15, 8 ) ;
-
-  ts_ms      NUMBER ;
-  ts_high    RAW(4) ;
-  ts_low     RAW(2) ;
-
-  rw_retval  RAW(16)        ;
 BEGIN
 
-  -- dbms_output.put_line ( 'uuid7: in_ts :' || to_char ( in_ts ) || ', vc_ts :[' || vc_ts || ']' ) ;
+  IF in_uuid IS NULL THEN
 
-  IF in_ts IS NULL THEN                 -- NULL given, return proper uuid-v7
-  BEGIN
-                              -- Considered: If Explicit NULL given, return 00s
-                              -- dbms_output.put_line ( 'uuid7: set to 00s ' ) ;
-                              -- rw_retval := HEXTORAW ( LPAD ( '0', 32, '0' ) ) ;
+    n_retval := NULL ;
 
-    rw_retval := uuid7 () ;  -- just call existing function
-  END ;
-  ELSE                                  -- use the in_ts to construct UUID-V7
+  ELSIF length ( in_uuid ) != 32 THEN
 
-    -- dbms_output.put_line ( 'uuid7: using given ts ' ) ;
-    -- construct...
+    n_retval := -1 ;
 
-    -- dbms_output.put_line ( 'uuid7: vc_items : [' || vc_yr || '-'|| vc_mmdd || '.' || vc_tim_ms || ']' ) ;
+  ELSIF     in_uuid = HEXTORAW ( REPLACE ( '00000000-0000-0000-0000-000000000000', '-', '') ) THEN
 
-    ts_ms    := (CAST(in_ts AS DATE) - DATE '1970-01-01') * 86400000;
+    n_retval := -255 ;
+  
+  ELSIF  in_uuid = HEXTORAW ( REPLACE ( 'ffffffff-ffff-ffff-ffff-ffffffffffff', '-', '') ) THEN
 
-    ts_high := HEXTORAW(LPAD(TO_CHAR(TRUNC(ts_ms / 65536), 'FM0XXXXXXX'), 8, '0'));
-    ts_low  := HEXTORAW(LPAD(TO_CHAR(MOD(TRUNC(ts_ms), 65536), 'FM0XXX'), 4, '0'));
+    n_retval :=  255 ;
 
-    -- note we ignore the setting of bit 64 and 64 with Variant info
-    rw_retval := UTL_RAW.CONCAT(ts_high, ts_low     -- 8 + 4 = 12
-                  , hextoraw ( '7000' )
-                  , hextoraw ( vc_yr )
-                  , hextoraw ( vc_mmdd )
-                  , hextoraw ( vc_tim_ms ) ) ;
-                  -- , hextoraw ( '000000000000' ) ); -- can also be clean zeros, or random..
+  -- NEED MORE CHECKS...
+  ELSE
 
-  END IF ; -- null given , null returned
+    vc_version := SUBSTR ( in_uuid, 13, 1 ) ; 
 
-  -- dbms_output.put_line ( 'uuid7: retval : ['|| rw_retval || ']' ) ;
+    IF REGEXP_LIKE(vc_version, '^[123456780]+$') THEN
 
-  return rw_retval ; 
+      n_retval := vc_version ; 
 
-END;
-/
+    ELSE 
+
+      n_retval :=  -2 ; 
+
+    END IF; 
+
+  END IF ; 
+
+  RETURN n_retval ; 
+
+END;  -- uuid_get_version
+/ 
+
 show errors 
 
--- just in case, debug..
-set serveroutput on
 
--- v2: generate_uuid_v7_rfc9562
-CREATE OR REPLACE FUNCTION uuid7
+CREATE OR REPLACE FUNCTION vc_to_uuid ( in_vc Varchar2 default null )
 RETURN RAW
-  -- Build on Initial from Jasmin Fluri, Oct 2025
-  -- v2: generate_uuid_v7_rfc9562
+-- 
+-- Convert to UUID, if possible
+--
+-- retval:  
+-- NULL -> NULL
+-- too_short:  raise..error
+-- conversion error: raise error
+--
+-- Queestions: 
+--  - should we RAISE errors ?  yes, prevent faulty data.
+-- 
 IS
-    -- 1. Timestamp in ms seit Unix Epoch (48 Bit)
-    ts_ms NUMBER := (CAST(SYSTIMESTAMP AT TIME ZONE 'UTC' AS DATE) - DATE '1970-01-01') * 86400000;
 
-    -- 2. Random für rand_a (12 Bit), rand_b (62 Bit)
-    rand_a NUMBER := TRUNC(DBMS_RANDOM.VALUE(0, 4096)); -- 12 Bit
-    rand_b1 NUMBER := TRUNC(DBMS_RANDOM.VALUE(0, POWER(2,16))); -- für 16+16+16+14 Bit (62 Bit rand_b werden auf 16+16+16+14 verteilt)
-    rand_b2 NUMBER := TRUNC(DBMS_RANDOM.VALUE(0, POWER(2,16)));
-    rand_b3 NUMBER := TRUNC(DBMS_RANDOM.VALUE(0, POWER(2,16)));
-    rand_b4 NUMBER := TRUNC(DBMS_RANDOM.VALUE(0, POWER(2,14)));
+  raw_retval     RAW ( 16 ) := NULL ; -- default null
+  vc_value       Varchar2(40 ) ;      -- extra space for hyphens, spaces, overhead
 
-    uuid RAW(16);
 BEGIN
-    -- 48 Bit Zeitstempel: High 32 Bit, Low 16 Bit
-    -- Zeitstempel als 12 hex-stellige Zahl (6 Bytes)
-    -- ts_high: erste 4 Bytes
-    -- ts_low: letzte 2 Bytes
-    DECLARE
-        ts_high RAW(4) := HEXTORAW(LPAD(TO_CHAR(TRUNC(ts_ms / 65536), 'FM0XXXXXXX'), 8, '0'));
-        ts_low  RAW(2) := HEXTORAW(LPAD(TO_CHAR(MOD(TRUNC(ts_ms), 65536), 'FM0XXX'), 4, '0'));
 
-        -- Version 7 ins erste Nibble von rand_a (0x7<<12) | (rand_a amp 0xFFF)
-        ver_rand_a RAW(2) := HEXTORAW(LPAD(TO_CHAR(BITAND(rand_a, 4095) + 28672, 'FM0XXX'), 4, '0'));
+  -- dbms_output.put_line ( 'vc_to_uuid: in = ' || in_vc ) ;
 
-        -- Variant 0b10xxxxxx...  (RFC Variant: 2 High Bits = 10)
-        -- Wir nehmen 2 variant bits (0x8000) plus 14 random bits
-        var_rand_b1 RAW(2) := HEXTORAW(LPAD(TO_CHAR(BITAND(rand_b4, 16383) + 32768, 'FM0XXX'), 4, '0'));
+  IF in_vc IS NULL THEN
 
-        -- 4 * 2 Byte random:
-        r_b1 RAW(2) := HEXTORAW(LPAD(TO_CHAR(rand_b1, 'FM0XXX'), 4, '0'));
-        r_b2 RAW(2) := HEXTORAW(LPAD(TO_CHAR(rand_b2, 'FM0XXX'), 4, '0'));
-        r_b3 RAW(2) := HEXTORAW(LPAD(TO_CHAR(rand_b3, 'FM0XXX'), 4, '0'));
+    -- raw_retval := NULL ; 
+    RETURN NULL ;
 
-        -- Zusammenbauen: 6-2-2-2-2-2 = 16 bytes
-    BEGIN
-        uuid := UTL_RAW.CONCAT(ts_high, ts_low, ver_rand_a, var_rand_b1, r_b1, r_b2, r_b3);
-        RETURN uuid;
-    END;
+  ELSIF  length ( in_vc ) < 16 THEN
+
+    -- dbms_output.put_line ( 'vc_to_uuid: length < 16 ' ) ;
+
+    vc_value := 'too short' ; -- guarantee Error..
+
+  ELSE -- TODO: include more checks on Length, Content..
+
+    vc_value :=  REPLACE ( in_vc, '-', '' )  ; 
+    -- dbms_output.put_line ( 'vc_to_uuid: hyphens replaced, [' || vc_value || ']' ) ;
+
+  END IF ;
+
+  raw_retval := HEXTORAW ( vc_value );
+
+  return raw_retval ; 
+
+END; -- vc_to_uuid
+/
+
+list
+
+show errors 
+
+
+CREATE OR REPLACE FUNCTION uuid7_epoch ( the_uuid RAW default null )
+RETURN number
+-- 
+-- extract the epoc from a UUID-V7 (hence the name )
+--
+-- retval:  
+-- NULL -> NULL
+-- MIN-uuid, '000....': 0, 1970
+-- MAX-uuid, 'fff....': Epoch-time, 
+-- input invalid, random or conversion error: raise error
+-- valid uuid-v7: epoch time with 3 decimals, e.g. millisec
+--
+-- Queestions: 
+--  - if UUID is different version.. consider -1, -4 etc.. ? 
+-- 
+IS
+
+  vc_hex_epoch       Varchar2(32 ) ;      -- extra space for  overhead ???
+
+  n_epoch           number ; 
+
+BEGIN
+
+  vc_hex_epoch := SUBSTR ( the_uuid, 1, 12 ) ;
+
+  -- dbms_output.put_line ( 'uuid7_to_epoch: uuid: ' || the_uuid || ', vc_hex = [' || vc_hex_epoch || ']' ) ;
+
+  n_epoch := to_number ( vc_hex_epoch, 'XXXXXXXXXXXX' ) / 1000  ;
+
+  -- dbms_output.put_line ( 'uuid7_to_epoch: epoch = [' || n_epoch || ']' ) ;
+
+  return n_epoch ;
+ 
 END;
 /
 
+list
 show errors
 
+set serveroutput on
 
--- now for some formatting... 8-4-4-4-12
+column id       format A35
+column fmt_uuid format A38
+column vsiz     format 9999
+column ver      format 9999
 
-CREATE OR REPLACE FUNCTION fmt_uuid ( the_uuid RAW )
-RETURN VARCHAR2
--- format UUID into the most common format, lowercase.
--- future versions: choose lower/upper, maybe more formats..
--- future versions: allow input of 32-length varchar ? 
-IS
-  vc_retval varchar2(40) := '';
-begin
+column the_vc   format A37
+column to_raw   format A35
 
-  IF the_uuid IS NULL THEN
+column ts_epoch format 99999999999.999
 
-    -- vc_retval := '00000000-0000-0000-0000-000000000000';
-    vc_retval := NULL ;         -- NULL seems more appropriate
+set linesize 90
 
-  ELSE  
+with v7 as ( select uuid()       as id          from dual connect by level < 3 )
+select id
+, fmt_uuid ( id ) fmt_uuid
+, vsize ( id )             vsiz 
+, uuid_get_version ( id )  ver
+from v7 ; 
 
-    vc_retval :=  substr ( the_uuid,  1, 8 ) 
-        || '-' || substr ( the_uuid,  9, 4 )
-        || '-' || substr ( the_uuid, 13, 4 )
-        || '-' || substr ( the_uuid, 17, 4 )
-        || '-' || substr ( the_uuid, 21 )  ;
-      
-  End if;
-  
-  vc_retval := lower ( vc_retval ) ;
+with v7 as ( select uuid7()      as id          from dual connect by level < 3 )
+select id
+, fmt_uuid ( id ) fmt_uuid
+, vsize ( id )             vsiz 
+, uuid_get_version ( id )  ver
+from v7 ; 
 
-  return vc_retval ;
-  
-END; -- fmt_uuid (raw)
-/
+with v7 as ( select sys_guid()      as id          from dual connect by level < 3 )
+select id
+, fmt_uuid ( id ) fmt_uuid
+, vsize ( id )             vsiz 
+, uuid_get_version ( id )  ver
+from v7 ; 
 
-show errors
 
--- test and demo the functions..
+delete from t7 ; 
 
-select uuid7 from dual connect by level < 6;
-select raw_to_uuid ( uuid7 ) as with_hyphens from dual connect by level < 6;
+insert into t7 ( id )  select id from  (
+       select null        as id  from dual
+ union select SYS_GUID ()        from dual
+ union select UUID()             from dual  -- out comment if versions below v23
+ union select UUID7()            from dual  -- out comment if not yet created..
+ union select HEXTORAW ( '00' )  from dual
+ union select HEXTORAW ( 'FF' )  from dual
+ union select HEXTORAW ( REPLACE ( '00000000-0000-0000-0000-000000000000', '-', '' ) ) from dual
+ union select HEXTORAW ( REPLACE ( 'ffffffff-ffff-ffff-ffff-ffffffffffff', '-', '' ) ) from dual ) ;
 
-set echo off
-prompt . 
-prompt .........  demo the format ......... 
-prompt .
+select id
+, fmt_uuid ( id ) fmt_uuid
+, vsize ( id )             vsiz 
+, uuid_get_version ( id )  ver
+from t7 ; 
+
+with vc_ins as ( 
+  select id, fmt_uuid ( id ) as the_vc  
+  from t7 
+  where (   ( vsize ( id ) = 16 ) 
+         or id IS NULL )
+)
+select the_vc, vc_to_uuid ( the_vc ) as to_raw from vc_ins ; 
+
+select uuid7_epoch ( uuid7() ) as ts_epoch, f_epoch as ts_epoch from t7 ; 
+
+-- prevent holding lock
+commit ; 
 
 set echo on
-
-select  fmt_uuid ( null        )  as fmt_null     from dual   ;
-select  fmt_uuid ( sys_guid()  )  as fmt_sys_guid from dual ;
-select  fmt_uuid ( uuid()      )  as fmt_uuid4    from dual ;
-
-with max_uuid as ( select hextoraw ( lpad ( 'F', 32, 'F' ) )  as max_id from dual )  
-select  fmt_uuid ( max_id      )  as max_uuid     from max_uuid ;
+select uuid7_epoch ( uuid7() )/1000  as ts_epoch , f_epoch ()  as ts_epoch from t7 ; 
 
 set echo off
-
-column id        format A32
-column fmt_uuid  format A37
-column vsiz      format 9999 
-
-set echo on
-
--- check the format and size for v7 ???
-with v7 as ( select uuid7() as id from dual )
-select id, fmt_uuid ( id ) fmt_uuid, vsize ( id )  vsiz from v7 ;
-
-with v4 as ( select uuid() as id from dual )
-select id, fmt_uuid ( id ) fmt_uuid, vsize ( id )  vsiz from v4 ;
-
-
--- now testing V7 with given Timestamp
-select uuid7_ts ( )              as no_param    from dual connect by level < 2; 
-select uuid7_ts ( NULL )         as with_null   from dual connect by level < 2; 
-select uuid7_ts ( systimestamp ) as in_timestmp from dual connect by level < 2; 
-select uuid7_ts ( sysdate )      as in_sysdate  from dual connect by level < 2; 
-
--- more tests..
-with v7 as ( 
-select uuid7_ts ( )              as id          from dual connect by level < 3)
-select id, fmt_uuid ( id ) fmt_uuid, vsize ( id )  vsiz from v7 ; 
-
-with v7 as ( 
-select uuid7_ts ( NULL )         as id          from dual connect by level < 3)
-select id, fmt_uuid ( id ) fmt_uuid, vsize ( id )  vsiz from v7 ; 
-
-with v7 as ( 
-select uuid7_ts ( systimestamp)  as id          from dual connect by level < 9)
-select id, fmt_uuid ( id ) fmt_uuid, vsize ( id )  vsiz from v7 ; 
-
-with v7 as ( 
-select uuid7_ts ( sysdate-level) as id          from dual connect by level < 9)
-select id, fmt_uuid ( id ) fmt_uuid, vsize ( id )  vsiz from v7 ; 
+set serveroutput off
 

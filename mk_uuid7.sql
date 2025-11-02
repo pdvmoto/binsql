@@ -115,6 +115,9 @@ IS
     -- 1. Timestamp in ms seit Unix Epoch (48 Bit)
     ts_ms NUMBER := (CAST(SYSTIMESTAMP AT TIME ZONE 'UTC' AS DATE) - DATE '1970-01-01') * 86400000;
 
+    -- add the milliseconds
+    ts_add_ms  NUMBER := to_number ( to_char ( systimestamp, 'FF' ) ) / 1000000  ; 
+
     -- 2. Random für rand_a (12 Bit), rand_b (62 Bit)
     rand_a NUMBER := TRUNC(DBMS_RANDOM.VALUE(0, 4096)); -- 12 Bit
     rand_b1 NUMBER := TRUNC(DBMS_RANDOM.VALUE(0, POWER(2,16))); -- für 16+16+16+14 Bit (62 Bit rand_b werden auf 16+16+16+14 verteilt)
@@ -124,6 +127,10 @@ IS
 
     uuid RAW(16);
 BEGIN
+
+    -- add sec + ms, the oroginal ts_ms lost the Sec, bcse of CAST-DATE
+    ts_ms := ts_ms + ts_add_ms ; 
+
     -- 48 Bit Zeitstempel: High 32 Bit, Low 16 Bit
     -- Zeitstempel als 12 hex-stellige Zahl (6 Bytes)
     -- ts_high: erste 4 Bytes
