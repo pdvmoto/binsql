@@ -9,6 +9,14 @@ original: (run this first..)
   3rd version: uuuid7_ts: with option for given timestamp (note the wrong Variat)
   v2: more functions, possibly package: version, to_vc, and uuid_epoch, -ts, -date
 
+functions in this file:
+  uuid_get_version
+  vc2_to_uuid 
+  .. 
+  uuid_to_epoch ( ) 
+  epoch_to_timestamp ( epoch_incl_decimals for fractional seconds) 
+
+
 todo:
  - 48-bit timestamp seems to miss the millisec ?? 
  - uuid7 with given date.. for use in partitioning or range-queries
@@ -20,15 +28,22 @@ todo:
      the null-uuuid has to be done elsewhere, or with separate paremeter.. ? 
  - in fmt_uuid: catch invalid UUIDs - raise error ? 
 
+
+-- We Really Twist Ourselves here,
+-- Someone Please find a more elegant way...
+the_timestamp :=  (cast ( (sysdate + ( uuid7_epoch ( id )/ (24*3600)  ) )  
+                              as timestamp ) 
+                  )                          -- the date-part, as TS
+                + to_dsinterval ( '0 00:00:00' || to_char ( mod ( uuid7_epoch ( id ), 1 ), '.999') ) ;  -- add fraciont as interval
+                                
 adding functions:
 
 Questions..
  - Q1 : how important is the variant-byte ? 
- - Q2 : would "overloaded function" be more elegant -> yes.
+ - Q2 : would "overloaded function" be more elegant -> yes, needs work.
  
 
-
-example uuid7:
+examples uuid7:
 1...,....1....,....2....,....3..
 019A3AD146A8743DB278B7DC46A2B851
 12345678000070001234000012345678
@@ -39,7 +54,29 @@ formatted, spacing out bits, bytes..
               7000-2025-103116005900
                    YYYY-MMDDHHMISSmm
 
-*/
+**************************************** */
+
+CREATE OR REPLACE FUNCTION epoch_to_timestamp ( epoch_sec number )
+RETURN timestamp
+IS
+  dt_start_epoch    DATE        ;
+  vc_fract          VARCHAR2(4) ;
+  the_timestamp     TIMESTAMP   ;
+BEGIN
+
+  dt_start_epoch := TO_DATE ( '1979-01-01', 'YYYY-MM-DD' ) ;   
+  vc_fract       := TO_CHAR ( mod (  ( epoch_sec ), 1 ), '.999') ; 
+
+  dbms_output.put_line ( 'uuid_to_ts :' || dt_start_epoch || ', vc_fract: ['|| vc_fract || ']' ) ; 
+
+  the_timestamp  :=  dt_start_epoch + ( epoch_sec / (24*3600) )  
+                   + to_dsinterval ( '0 00:00:00' || to_char ( mod ( epoch_sec, 1 ), '.999') ) ; 
+
+  RETURN the_timestamp ; 
+END;
+/
+list
+show errors
 
 
 CREATE OR REPLACE FUNCTION uuid_get_version ( in_uuid RAW default null )
@@ -54,8 +91,8 @@ RETURN number
 -- max:'ffffffff-ffff-ffff...  :  255 (or some high value..)
 --
 -- Queestions: 
---  - should we RAISE errors ? 
---  - how to check for SYS_GUID ?
+--  - when should we RAISE errors ? 
+--  - add check for SYS_GUID ? Others..?
 -- 
 IS
   n_retval     number ;   -- define as Integer ??
@@ -104,12 +141,12 @@ END;  -- uuid_get_version
 show errors 
 
 
-CREATE OR REPLACE FUNCTION vc_to_uuid ( in_vc Varchar2 default null )
+CREATE OR REPLACE FUNCTION vc2_to_uuid ( in_vc Varchar2 default null )
 RETURN RAW
 -- 
--- Convert to UUID, if possible
+-- Convert the given VC2 into a UUID, if possible.
 --
--- retval:  
+-- retvals:  
 -- NULL -> NULL
 -- too_short:  raise..error
 -- conversion error: raise error
@@ -124,7 +161,7 @@ IS
 
 BEGIN
 
-  -- dbms_output.put_line ( 'vc_to_uuid: in = ' || in_vc ) ;
+  -- dbms_output.put_line ( 'vc2_to_uuid: in = ' || in_vc ) ;
 
   IF in_vc IS NULL THEN
 
@@ -133,14 +170,14 @@ BEGIN
 
   ELSIF  length ( in_vc ) < 16 THEN
 
-    -- dbms_output.put_line ( 'vc_to_uuid: length < 16 ' ) ;
+    -- dbms_output.put_line ( 'vc2_to_uuid: length < 16 ' ) ;
 
     vc_value := 'too short' ; -- guarantee Error..
 
   ELSE -- TODO: include more checks on Length, Content..
 
     vc_value :=  REPLACE ( in_vc, '-', '' )  ; 
-    -- dbms_output.put_line ( 'vc_to_uuid: hyphens replaced, [' || vc_value || ']' ) ;
+    -- dbms_output.put_line ( 'vc2_to_uuid: hyphens replaced, [' || vc_value || ']' ) ;
 
   END IF ;
 
@@ -148,13 +185,25 @@ BEGIN
 
   return raw_retval ; 
 
-END; -- vc_to_uuid
+END; -- vc2_to_uuid
 /
 
 list
 
 show errors 
 
+     
+CREATE OR REPLACE FUNCTION uuid_to_vc2 ( the_uuid RAW )
+RETURN VARCHAR2
+-- for now: wrapper for fmt_uuid (), 
+-- see comment there..
+IS
+BEGIN 
+  RETURN fmt_uuid ( the_uuit ) ;
+END;
+/
+
+show errors
 
 CREATE OR REPLACE FUNCTION uuid7_epoch ( the_uuid RAW default null )
 RETURN number
@@ -163,13 +212,15 @@ RETURN number
 --
 -- retval:  
 -- NULL -> NULL
--- MIN-uuid, '000....': 0, 1970
--- MAX-uuid, 'fff....': Epoch-time, 
+-- MIN-uuid, '000....': -> epoch=0, 1970-01-01
+-- MAX-uuid, 'fff....': -> Epoch-time, 2038-01-19, 03:14:07, UTC
+-- valid uuid-v7: -> return epoch time with 3 decimals, e.g. millisec
 -- input invalid, random or conversion error: raise error
--- valid uuid-v7: epoch time with 3 decimals, e.g. millisec
 --
--- Queestions: 
---  - if UUID is different version.. consider -1, -4 etc.. ? 
+-- Questions, todo: 
+--  - room for improvement
+--  - needs more error checking ?
+--  - add UUID different versions, consider similar capability for v1 and v6
 -- 
 IS
 
@@ -233,6 +284,8 @@ from v7 ;
 
 delete from t7 ; 
 
+set echo on
+
 insert into t7 ( id )  select id from  (
        select null        as id  from dual
  union select SYS_GUID ()        from dual
@@ -249,13 +302,15 @@ select id
 , uuid_get_version ( id )  ver
 from t7 ; 
 
+set echo off
+
 with vc_ins as ( 
   select id, fmt_uuid ( id ) as the_vc  
   from t7 
-  where (   ( vsize ( id ) = 16 ) 
+  where (   ( vsize ( id ) = 16 ) -- only the valid ones..
          or id IS NULL )
 )
-select the_vc, vc_to_uuid ( the_vc ) as to_raw from vc_ins ; 
+select the_vc, vc2_to_uuid ( the_vc ) as to_raw from vc_ins ; 
 
 select uuid7_epoch ( uuid7() ) as ts_epoch, f_epoch as ts_epoch from t7 ; 
 
@@ -263,7 +318,7 @@ select uuid7_epoch ( uuid7() ) as ts_epoch, f_epoch as ts_epoch from t7 ;
 commit ; 
 
 set echo on
-select uuid7_epoch ( uuid7() )/1000  as ts_epoch , f_epoch ()  as ts_epoch from t7 ; 
+select uuid7_epoch ( uuid7() ) as ts_epoch , f_epoch ()  as ts_epoch from t7 ; 
 
 set echo off
 set serveroutput off
