@@ -54,6 +54,8 @@ formatted, spacing out bits, bytes..
               7000-2025-103116005900
                    YYYY-MMDDHHMISSmm
 
+00000000-0000-0000-0000-000000000000
+
 **************************************** */
 
 CREATE OR REPLACE FUNCTION epoch_to_timestamp ( epoch_sec number )
@@ -64,15 +66,26 @@ IS
   the_timestamp     TIMESTAMP   ;
 BEGIN
 
-  dt_start_epoch := TO_DATE ( '1979-01-01', 'YYYY-MM-DD' ) ;   
-  vc_fract       := TO_CHAR ( mod (  ( epoch_sec ), 1 ), '.999') ; 
+  IF ( epoch_sec IS NULL ) THEN 
 
-  dbms_output.put_line ( 'uuid_to_ts :' || dt_start_epoch || ', vc_fract: ['|| vc_fract || ']' ) ; 
+    the_timestamp := NULL ;
 
-  the_timestamp  :=  dt_start_epoch + ( epoch_sec / (24*3600) )  
-                   + to_dsinterval ( '0 00:00:00' || to_char ( mod ( epoch_sec, 1 ), '.999') ) ; 
+  -- Also Catch numbers > 2^31 !
+
+  ELSE
+
+    dt_start_epoch := TO_DATE ( '1979-01-01', 'YYYY-MM-DD' ) ;   
+    vc_fract       := TO_CHAR ( mod (  ( epoch_sec ), 1 ), '.999') ; 
+
+    dbms_output.put_line ( 'uuid_to_ts :' || dt_start_epoch || ', vc_fract: ['|| vc_fract || ']' ) ; 
+
+    the_timestamp  :=  dt_start_epoch + ( epoch_sec / (24*3600) )  
+                     + to_dsinterval ( '0 00:00:00' || to_char ( mod ( epoch_sec, 1 ), '.999') ) ; 
+
+  END if ;
 
   RETURN the_timestamp ; 
+
 END;
 /
 list
@@ -137,7 +150,7 @@ BEGIN
 
 END;  -- uuid_get_version
 / 
-
+list
 show errors 
 
 
@@ -189,7 +202,6 @@ END; -- vc2_to_uuid
 /
 
 list
-
 show errors 
 
      
@@ -199,10 +211,10 @@ RETURN VARCHAR2
 -- see comment there..
 IS
 BEGIN 
-  RETURN fmt_uuid ( the_uuit ) ;
+  RETURN fmt_uuid ( the_uuid ) ;
 END;
 /
-
+list
 show errors
 
 CREATE OR REPLACE FUNCTION uuid7_epoch ( the_uuid RAW default null )
@@ -227,18 +239,40 @@ IS
   vc_hex_epoch       Varchar2(32 ) ;      -- extra space for  overhead ???
 
   n_epoch           number ; 
+  n_retval_epoch    number ; 
+
+  vc_the_uuid       varchar(40) ; 
 
 BEGIN
 
-  vc_hex_epoch := SUBSTR ( the_uuid, 1, 12 ) ;
+  IF the_uuid is NULL THEN
 
-  -- dbms_output.put_line ( 'uuid7_to_epoch: uuid: ' || the_uuid || ', vc_hex = [' || vc_hex_epoch || ']' ) ;
+    n_retval_epoch := NULL;
 
-  n_epoch := to_number ( vc_hex_epoch, 'XXXXXXXXXXXX' ) / 1000  ;
+  ELSIF the_uuid = HEXTORAW ( lpad ( '0', 32, '0' ) ) THEN
+    n_retval_epoch := 0;
+     
+  ELSIF the_uuid = HEXTORAW ( lpad ( 'F', 32, 'F' ) ) THEN
+    n_retval_epoch := (power ( 2, 31 ) - 1 ) ;  
+
+  ELSIF ( uuid_get_version ( the_uuid ) != 7 ) THEN
+     
+    vc_the_uuid := uuid_to_vc2 ( the_uuid ) ; 
+    RAISE_APPLICATION_ERROR(-20001, 'Error: No valid UUID-V7, ' || vc_the_uuid || '.' );
+
+  ELSE 
+
+    vc_hex_epoch := SUBSTR ( the_uuid, 1, 12 ) ;
+
+    -- dbms_output.put_line ( 'uuid7_to_epoch: uuid: ' || the_uuid || ', vc_hex = [' || vc_hex_epoch || ']' ) ;
+
+    n_retval_epoch := to_number ( vc_hex_epoch, 'XXXXXXXXXXXX' ) / 1000  ;
+
+  END IF ; 
 
   -- dbms_output.put_line ( 'uuid7_to_epoch: epoch = [' || n_epoch || ']' ) ;
 
-  return n_epoch ;
+  return n_retval_epoch ;
  
 END;
 /
@@ -255,6 +289,7 @@ column ver      format 9999
 
 column the_vc   format A37
 column to_raw   format A35
+column ep_to_ts format A30
 
 column ts_epoch format 99999999999.999
 
@@ -312,13 +347,34 @@ with vc_ins as (
 )
 select the_vc, vc2_to_uuid ( the_vc ) as to_raw from vc_ins ; 
 
-select uuid7_epoch ( uuid7() ) as ts_epoch, f_epoch as ts_epoch from t7 ; 
-
 -- prevent holding lock
 commit ; 
 
+prompt .
+prompt Testing uuid7_to_epoch...
+prompt .
+
+select uuid7_epoch ( uuid7() ) as ts_epoch, f_epoch as ts_epoch from t7 ; 
+
 set echo on
-select uuid7_epoch ( uuid7() ) as ts_epoch , f_epoch ()  as ts_epoch from t7 ; 
+select id, uuid7_epoch ( uuid7() ) as ts_epoch , f_epoch ()  as ts_epoch from t7 ; 
+
+delete from t7;
+
+insert into t7 ( id )  select id from  (
+       select null        as id  from dual
+ union select UUID7()            from dual  -- out comment if not yet created..
+ union select HEXTORAW ( REPLACE ( '00000000-0000-0000-0000-000000000000', '-', '' ) ) from dual
+ union select HEXTORAW ( REPLACE ( 'ffffffff-ffff-ffff-ffff-ffffffffffff', '-', '' ) ) from dual ) ;
+
+insert into t7 ( id )  select min ( id ) from tst_uuid7 ; 
+insert into t7 ( id )  select max ( id ) from tst_uuid7 ; 
+
+select  
+  fmt_uuid ( id )     as fmt_uuid
+, uuid7_epoch ( id )  as ts_epoch 
+, epoch_to_timestamp ( uuid7_epoch ( id ) )    as ep_to_ts
+from t7 ; 
 
 set echo off
 set serveroutput off
