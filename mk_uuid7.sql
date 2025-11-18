@@ -197,6 +197,48 @@ END; -- fmt_uuid (raw)
 
 show errors
 
+-- some tables
+create table ts as select sys_guid() as id from dual ;
+create table t4 as select uuid()     as id from dual ;
+create table t7 as select uuid7()    as id from dual ;
+
+
+create table tst_uuids (
+  id            raw (16)
+, created_dt    timestamp
+, ts_epoch      number
+, id_vc         varchar2(40)  -- id with hyphens
+, payload       varchar2(128 ) -- notes, etc..
+) ;
+
+alter table tst_uuids add constraint tst_uuids_pk primary key ( id ) ;
+
+-- drop   table tst_uuid4 ;
+
+create table tst_uuid4 (
+  id            raw (16)
+, created_dt    timestamp
+, ts_epoch      number
+, id_vc         varchar2(40)  -- id with hyphens
+, payload       varchar2(128 ) -- notes, etc..
+) ;
+
+alter table tst_uuid4 add constraint tst_uuid4_pk primary key ( id ) ;
+
+
+--drop table tst_uuid7 ;
+
+create table tst_uuid7 (
+  id            raw (16)
+, created_dt    timestamp
+, ts_epoch      number
+, id_vc         varchar2(40)  -- id with hyphens
+, payload       varchar2(128 ) -- notes, etc..
+) ;
+
+alter table tst_uuid7 add constraint tst_uuid7_pk primary key ( id ) ;
+
+
 -- test and demo the functions..
 
 select uuid7 from dual connect by level < 6;

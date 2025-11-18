@@ -79,7 +79,7 @@ with uuid_data as (
      , f_epoch            as ts_epoch
      , ' '                as id_vc
      , 'payld'            as payload
-  from dual connect by level < 100 )
+  from dual connect by level < 10 )
 select id, created_dt, ts_epoch, id_vc, payload from uuid_data;
 
 commit ; 
@@ -91,7 +91,7 @@ with uuid_data as (
      , f_epoch            as ts_epoch
      , ' '                as id_vc
      , 'payld'            as payload
-  from dual connect by level < 100 )
+  from dual connect by level < 10 )
 select id, created_dt, ts_epoch, id_vc, payload from uuid_data;
 
 commit ; 
@@ -103,7 +103,7 @@ with uuid_data as (
      , f_epoch            as ts_epoch
      , ' '                as id_vc
      , 'payld'            as payload
-  from dual connect by level < 100 )
+  from dual connect by level < 10 )
 select id, created_dt, ts_epoch, id_vc, payload from uuid_data;
 
 commit ; 
