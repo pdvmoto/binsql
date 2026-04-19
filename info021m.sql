@@ -27,7 +27,7 @@ break on pdb_name on con_id
 
 
 
-select con_id, ts# tsnr, '..'||substr ( name, 50) as fname
+select con_id, ts# tsnr, '..'||substr ( name,-30) as fname
 ,  round ( bytes /( 1024 * 1024)) mtotal
 --, df.*
 from v$datafile df
@@ -65,6 +65,17 @@ from v$datafile df
 where p.con_id = df.con_id
 group by p.name, p.con_id
 order by p.con_id
+/
+
+prompt improved version... 
+
+select df.con_id con, NVL ( p.name, 'CDB_ROOT' )   as pdb_name
+,  round ( sum ( bytes /( 1024 * 1024) ) ) mtotal
+--, df.*
+from       v$datafile df
+LEFT JOIN  v$pdbs      p  on p.con_id = df.con_id
+group by p.name, df.con_id
+order by df.con_id
 /
 
 select 
